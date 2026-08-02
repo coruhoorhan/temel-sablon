@@ -1,23 +1,17 @@
-# opencode config — TEMEL şablon
-# Referans: opencode.ai/docs/config · Bölüm 10.1/12.2 (ajan-bağımsız kapı: bu config yalnız deneyim katmanı)
-
 {
   "$schema": "https://opencode.ai/config.json",
-
+  "default_agent": "build",
   "agent": {
-    "default": "build",
     "verifier": {
       "model": "deepseek/deepseek-v4-flash",
       "tools": { "read": true, "grep": true, "bash": true }
     }
   },
-
   "permission": {
     "edit": "ask",
     "bash": "ask",
     "webfetch": "allow"
   },
-
   "instructions": [
     ".archcore/rules/01-tipler.rule.md",
     ".archcore/rules/02-mimari.rule.md",
@@ -33,7 +27,6 @@
     ".archcore/plans/README.md",
     "fsd.guide.md"
   ],
-
   "mcp": {
     "archcore": {
       "type": "local",

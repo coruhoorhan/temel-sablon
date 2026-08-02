@@ -3,9 +3,9 @@ description: Commit öncesi adversarial kod denetçisi — deterministik kapıla
 mode: subagent
 model: deepseek/deepseek-v4-flash
 tools:
-  - read
-  - grep
-  - bash
+  read: true
+  grep: true
+  bash: true
 ---
 
 # Verifier Ajanı
