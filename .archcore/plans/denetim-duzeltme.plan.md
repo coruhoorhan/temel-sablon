@@ -3,13 +3,13 @@ id: denetim-duzeltme
 status: accepted
 created: 2026-08-02
 approved_by: Kullanici
-last_approved: 2026-08-02T11:27:42Z
-last_review_date: 2026-08-02T11:27:42Z
+last_approved: 2026-08-02T11:33:46Z
+last_review_date: 2026-08-02T11:33:46Z
 ttl_days: 90
-plan_hash: e289061b6f563bbca740dc35473693f9efe9cc16823e54e823c9e4bc8451511e
+plan_hash: 398d542d9a11d98d09acebae331ed2edc52a1e7d4c8c4bf53349c6159c62ce08
 scope:
   allowed_paths:
-    - .archcore/bin/verify-push
+    - .archcore/bin/**
     - lefthook.yml
     - .gitignore
     - README.md
