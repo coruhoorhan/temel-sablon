@@ -29,16 +29,19 @@ temel/
 
 ## Kurulum (yeni proje)
 
-**En kolay yol:** şablonu kopyala (veya template'ten repo oluştur), sonra:
+**Tek komut (önerilen):** boş bir klasöre `setup.sh` at, çalıştır — gerisini script yapar:
 
 ```bash
-cd <yeni-proje> && bash setup.sh
+curl -O https://raw.githubusercontent.com/coruhoorhan/temel-sablon/main/setup.sh
+bash setup.sh
 ```
 
-Script interaktiftir: proje adı, GitHub bilgileri, repo görünürlüğü sorar;
-kurulum + kapı testi + doğrulamayı yapar, sonunda ne yapılacağını anlatır.
+Script interaktiftir: **sadece proje adını** sorar, sonra şablonu GitHub'dan çeker,
+`git init` (main) + `npm install` + kapıları kurar, plansız commit'i REDDETME testini
+yapar, `verify` + drift + gitleaks ile doğrular ve özet basar. (gh girişi varsa
+GitHub'da repo oluşturmayı da sorar: y/N → public/private.)
 
-Elle kurulum (script'siz):
+Elle kurulum (script'siz — sadece gerektiğinde):
 
 1. Şablonu kopyala: `cp -r temel/. <yeni-proje>/`
 2. Git'i başlat (**main** dalı — CI workflow'ları main dinler):

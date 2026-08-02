@@ -41,11 +41,50 @@ else
 fi
 [[ "$fail_count" -gt 0 ]] && { fail "Ön koşullar eksik — kurulum durduruldu."; exit 1; }
 
+# --- şablon varlık kontrolü: boş klasöre atılan setup.sh da çalışır ---
+if [[ ! -f package.json || ! -d .archcore ]]; then
+  step "ŞABLON GETİRME"
+  info "Bu klasörde şablon dosyaları yok — GitHub'dan çekiliyor..."
+  TMP="$(mktemp -d)"
+  GOT=""
+  # 1) GitHub birincil (template repo)
+  if git clone --depth 1 https://github.com/coruhoorhan/temel-sablon.git "$TMP/sablon" >/dev/null 2>&1; then
+    tar -C "$TMP/sablon" --exclude='./.git' --exclude='./node_modules' --exclude='./coverage' -cf - . | tar -C . -xf -
+    ok "şablon GitHub'dan çekildi: github.com/coruhoorhan/temel-sablon"
+    GOT=1
+  else
+    # 2) internet yok / auth yok → yerel şablon fallback
+    SRC=""
+    [[ -n "${TEMPLATE_SRC:-}" ]] && SRC="$TEMPLATE_SRC"
+    if [[ -z "$SRC" && -d /c/Users/Windows/projeler/temel-sablon ]]; then SRC="/c/Users/Windows/projeler/temel-sablon"; fi
+    if [[ -z "$SRC" && -d "$HOME/temel-sablon" ]]; then SRC="$HOME/temel-sablon"; fi
+    if [[ -n "$SRC" && -f "$SRC/package.json" && -d "$SRC/.archcore" ]]; then
+      info "GitHub'a ulaşılamadı — yerel şablon deneniyor: $SRC"
+      tar -C "$SRC" --exclude='./.git' --exclude='./node_modules' --exclude='./coverage' -cf - . | tar -C . -xf -
+      ok "şablon yerelden kopyalandı: $SRC"
+      GOT=1
+    fi
+  fi
+  rm -rf "$TMP"
+  if [[ -z "$GOT" ]]; then
+    fail "Şablon getirilemedi — setup.sh şablon klasörünün içinde çalıştırılmalı, internet + gh girişi olmalı veya TEMPLATE_SRC=<yol> verilmeli."
+    exit 1
+  fi
+  rm -rf .git
+fi
+
 # --- bilgi topla ---
 step "BİLGİLER"
 DEFAULT_NAME="$(basename "$(pwd)")"
 echo -n "Proje adı [$DEFAULT_NAME]: "
 read -r PROJ_NAME; PROJ_NAME="${PROJ_NAME:-$DEFAULT_NAME}"
+if [[ "$PROJ_NAME" =~ [[:space:]] ]]; then
+  SANE="${PROJ_NAME// /-}"
+  warn "Proje adında boşluk var — GitHub repo adı boşluk alamaz."
+  echo -n "Öneri: '$SANE' kullanılsın mı? (Y/n): "
+  read -r FIX; [[ "${FIX:-y}" =~ ^[yY]$ ]] && PROJ_NAME="$SANE"
+fi
+echo "→ Proje adı: $PROJ_NAME"
 
 if have gh; then
   GH="$(use gh)"
