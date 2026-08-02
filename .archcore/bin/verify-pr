@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# verify-pr — plan kapısı (Katman 5, CI)
+# PR/CI'da: ana dala itilen TÜM commit'ler plan referanslı + accepted + hash.
+# GitHub Actions (FAZ 2) ve Forgejo pre-receive (12.3) aynı scripti kullanır.
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLANS_DIR="$ROOT/.archcore/plans"
+BASE="${1:-origin/main}"
+HEAD="${2:-HEAD}"
+
+fail_count=0
+for cid in $(git rev-list "$BASE..$HEAD" 2>/dev/null); do
+  msg="$(git log -1 --format=%B "$cid")"
+  plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
+
+  if [[ -z "$plan_id" ]]; then
+    echo "[plan-gate] CI RED: $cid — 'plan: <id>' trailer'ı yok" >&2
+    fail_count=$((fail_count + 1)); continue
+  fi
+
+  plan_file="$PLANS_DIR/$plan_id.plan.md"
+  [[ -f "$plan_file" ]] || { echo "[plan-gate] CI RED: $cid — $plan_file yok" >&2; fail_count=$((fail_count + 1)); continue; }
+
+  status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$plan_file" | head -n1)"
+  [[ "$status" == "accepted" ]] || { echo "[plan-gate] CI RED: $cid — durum '$status'" >&2; fail_count=$((fail_count + 1)); continue; }
+
+  body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
+  stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
+  if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+    echo "[plan-gate] CI RED: $cid — hash kırılmış" >&2
+    fail_count=$((fail_count + 1)); continue
+  fi
+
+  # scope kontrolü: plan dışı dosya değişikliği var mı?
+  while IFS= read -r f; do
+    matched=0
+    while IFS= read -r pat; do
+      [[ "$f" == $pat ]] && { matched=1; break; }
+    done < <(sed -nE 's/^[[:space:]]+-[[:space:]]*(\S+)$/\1/p' "$plan_file")
+    if [[ "$matched" -eq 0 ]]; then
+      echo "[plan-gate] CI RED: $cid — '$f' plan scope'u dışında (allowed_paths kontrol et)" >&2
+      fail_count=$((fail_count + 1))
+    fi
+  done < <(git diff-tree --no-commit-id --name-only -r "$cid")
+
+  echo "[plan-gate] CI OK: $cid → plan '$plan_id'"
+done
+
+[[ $fail_count -gt 0 ]] && { echo "[plan-gate] CI: $fail_count ihlal." >&2; exit 1; }
+echo "[plan-gate] CI: tüm commit'ler onaylı planlarla uyumlu."
+exit 0

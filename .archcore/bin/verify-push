@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# verify-push — plan kapısı (Katman 2, pre-push)
+# İtilen her commit: plan referansı + accepted + hash + scope kontrolü.
+# --no-verify'ı CI/sunucu yakalar; bu hook yerel katman (Katman 5 esas zorlama).
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLANS_DIR="$ROOT/.archcore/plans"
+REMOTE="${1:-origin}"
+URL="${2:-}"
+
+fail_count=0
+
+check_commit() {
+  local cid="$1"
+  local msg plan_id plan_file status approved_by scope_allowed
+
+  msg="$(git log -1 --format=%B "$cid" 2>/dev/null || true)"
+  plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
+
+  if [[ -z "$plan_id" ]]; then
+    echo "[plan-gate] push RED: $cid — 'plan: <id>' trailer'ı yok" >&2
+    return 1
+  fi
+
+  plan_file="$PLANS_DIR/$plan_id.plan.md"
+  if [[ ! -f "$plan_file" ]]; then
+    echo "[plan-gate] push RED: $cid — $plan_file yok" >&2
+    return 1
+  fi
+
+  status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$plan_file" | head -n1)"
+  if [[ "$status" != "accepted" ]]; then
+    echo "[plan-gate] push RED: $cid — plan '$plan_id' durumu '$status'" >&2
+    return 1
+  fi
+
+  body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
+  stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
+  if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+    echo "[plan-gate] push RED: $cid — plan '$plan_id' hash kırılmış, yeniden onay gerek" >&2
+    return 1
+  fi
+
+  # scope: allowed_paths yoksa geniş kapsam → reddet (kasıtlı güvenlik)
+  scope_allowed="$(sed -nE 's/^[[:space:]]+-[[:space:]]*([^*]*[^*])$/\1/p' "$plan_file" | head -n1)"
+  if [[ -z "$scope_allowed" ]]; then
+    echo "[plan-gate] push RED: $cid — plan '$plan_id' scope.allowed_paths boş (güvenlik kuralı)" >&2
+    return 1
+  fi
+
+  echo "[plan-gate] push OK: $cid → plan '$plan_id'"
+  return 0
+}
+
+# İtilen commit'leri listele (pre-push stdin: "<local> <remote> <sha>" satırları)
+while read -r local_ref remote_ref; do
+  [[ "$local_ref" == "(delete)" ]] && continue
+  range="${local_ref}"
+  for cid in $(git rev-list --not --all "$range" 2>/dev/null | tac); do
+    check_commit "$cid" || fail_count=$((fail_count + 1))
+  done
+done
+
+[[ $fail_count -gt 0 ]] && { echo "[plan-gate] $fail_count commit reddedildi." >&2; exit 1; }
+exit 0

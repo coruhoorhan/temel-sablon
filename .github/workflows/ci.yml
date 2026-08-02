@@ -1,0 +1,95 @@
+# CI (K3) — TEMEL şablonu · FAZ 2
+# GitHub Actions + Forgejo uyumlu: checkout@v4/v5 kullan (v6 Forgejo'da bozuk).
+# Trunk-based solo: main'e push + pull_request (denetim) ikisinde de çalışır.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint:
+    name: lint + arch (Steiger/knip)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      # Mimari kapılar (FSD + ölü kod) CI'da da zorlanır:
+      # hooks --no-verify ile atlanabilir, CI atlanamaz.
+      - run: npm run arch:check
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    name: test + coverage (80/75/80/80)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Coverage eşiği Vitest config'te; eşik aşılırsa job kırmalı.
+      - run: npm test -- --coverage
+
+  plan-gate:
+    name: plan kapısı (verify-pr)
+    runs-on: ubuntu-latest
+    steps:
+      # Tam geçmiş şart: script rev-list <base>..<head> aralığını doğrular,
+      # shallow clone'da base commit yoksa kapı boş geçer.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Node gerekmez — saf bash; plan dosyaları (.archcore/plans) checkout ile gelir.
+      - name: plan onay kapısı
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha }}
+        run: bash .archcore/bin/verify-pr "$BASE_SHA" "$HEAD_SHA"
+
+  security-baseline:
+    name: security (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Yalnız high/critical; audit gürültüsü commit'i bloklamasın —
+      # derin taramalar (OSV/Trivy) FAZ 3'te gelecek.
+      - name: npm audit (high/critical)
+        run: npm audit --audit-level=high
+        continue-on-error: true

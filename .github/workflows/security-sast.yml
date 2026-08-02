@@ -1,0 +1,53 @@
+# SAST (K3) — TEMEL şablonu · FAZ 3 (Semgrep)
+# Action notu: semgrep/semgrep-action@v2 YOK — repo bakımsız (son tag v1,
+# son push 2024-04). Resmi doküman (semgrep.dev/docs) container + CLI yolunu
+# önerir; semgrep ci/scan action'sız çalışır → Forgejo (risk #15, Bölüm 12.3)
+# aynen taşınır: container runner yeterli, değişiklik gerekmez.
+# SEMGREP_APP_TOKEN OPSİYONEL: yalnız AppSec Platform'a bulgu göndermek için
+# env'den eklenir (örn. `semgrep ci`) — bu workflow'da secret KULLANILMAZ.
+
+name: security-sast
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sast-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-sast:
+    name: SAST (Semgrep, p/owasp-top-ten + p/default)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      # Tam geçmiş şart: --baseline-commit base commit'i arar,
+      # shallow clone'da bulunamazsa tarama abort eder (ci.yml plan-gate ile aynı gerekçe).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: semgrep scan (new-code eşiği)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            # Yalnız diff/yeni-kod eşiği (risk #4, FP hedefi <%20): baseline'da
+            # olmayan bulgular raporlanır → mevcut borç bloklamaz, yeni borç doğamaz.
+            semgrep scan --config p/owasp-top-ten --config p/default \
+              --baseline-commit "$BASE_SHA" --severity ERROR --error \
+              --json --output semgrep.json --metrics=off .
+          else
+            # İlk push (before=0000...) veya tam tarama: yalnız ERROR kırıcı (exit 1).
+            semgrep scan --config p/owasp-top-ten --config p/default \
+              --severity ERROR --error \
+              --json --output semgrep.json --metrics=off .
+          fi
+      # Not: FP gürültüsü başlarsa (ilk hafta olası) continue-on-error: true ekle
+      # veya ruleset'ten kural çıkar — kırıcı kapı değil, göz (risk #13: solo CI).

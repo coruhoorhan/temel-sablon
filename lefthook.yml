@@ -1,0 +1,63 @@
+# TEMEL kapı zinciri — FAZ 2 (tam sürüm) + FAZ 3 (Prettier format)
+# Kapı mimarisi: Bölüm 12.2 (ajan-bağımsız git-merkezli) · boru hattı: Bölüm 3.4 (K1-K5)
+
+# ---- K1 · PRE-COMMIT: bütçe 15sn, staged-only, hızlı katman ----
+# Amaç: commit anında format (Prettier) + sır taraması + staged diff üzerinde
+# hızlı lint + LLM verifier (yalnız diff ≤300 satır, 60sn fail-open).
+# SIRALI (parallel: false): format ÖNCE çalışıp düzeltir, ardından lint güncel
+# içeriği görür — paralelde format+lint aynı anda eski içerikte çakışabilir.
+# Prettier ~ms seviyesinde; sıralı ek yük bütçeyi (15sn) zorlamaz.
+pre-commit:
+  parallel: false
+  jobs:
+    - name: format
+      # Yalnız staged dosyalar; --ignore-unknown: Prettier'in bilmediği
+      # uzantılar (ör. .sh) hataya düşmesin. .prettierignore'daki dosyaları
+      # Prettier kendisi atlar (lefthook filtresine gerek yok).
+      # stage_fixed: düzeltilen dosyalar otomatik git add edilir (yalnız pre-commit).
+      run: npx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+    - name: secrets
+      # gitleaks SİSTEM aracıdır (devDependency DEĞİL): npm'de resmi paketi yok,
+      # "gitleaks" adlı npm paketi sahte/şüpheli (#16). Kur: apt/brew install gitleaks
+      # veya: go install github.com/gitleaks/gitleaks/v8@latest
+      # v8.30+: `detect --staged` KALDIRILDI → `git --staged` (staged diff tarar;
+      # `git --pre-commit` ilk commit öncesi 0 commit tarar, pre-commit hook'u için değil)
+      run: gitleaks git --staged -v .
+    - name: quick-lint
+      run: npx eslint {staged_files}
+    - name: llm-verify
+      run: bash .archcore/bin/llm-verify.sh {staged_files}
+      skip:
+        - ref: main        # ana dala doğrudan push zaten CI'dan (K3) geçer
+      timeout: 60s         # fail-open bütçe: LLM arızası commit'i engellemez
+
+# ---- K2 · PRE-PUSH: tam proje kapıları ----
+# Amaç: tsc --noEmit (tam proje) + tam ESLint + değişen scope testleri,
+# push öncesi son yerel doğrulama katmanı. CI (K3) aynı konfigürasyonu çalıştırır.
+pre-push:
+  parallel: true
+  jobs:
+    - name: plan-gate-push
+      run: .archcore/bin/verify-push origin
+    - name: drift
+      # Bilgi amaçlı — exit 0; bayat .archcore belgelerini push anında hatırlatır
+      # (TTL kontratı, Bölüm 8.3 madde 6; --strict aylık bakımda: verify-drift --strict)
+      run: bash .archcore/bin/verify-drift
+    - name: typecheck
+      run: npm run typecheck
+    - name: full-lint
+      run: npm run lint
+    - name: tests
+      run: npm test
+
+# ---- commit-msg: commit mesajı kapıları ----
+# Amaç: plan onay kapısı (plan: <id> + accepted + hash) ve conventional commit.
+# İki kapı çakışmaz: commitlint yalnız sözdizimi, plan trailer'ı verify-commit-msg zorlar.
+commit-msg:
+  parallel: true
+  jobs:
+    - name: plan-gate
+      run: .archcore/bin/verify-commit-msg {1}
+    - name: commitlint
+      run: npx commitlint --edit {1}

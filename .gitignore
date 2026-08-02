@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Env — gitleaks + ruleset yakalar, hiçbir zaman commit'e girmez
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+
+# Tooling
+.archcore/tmp/

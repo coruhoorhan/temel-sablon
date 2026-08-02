@@ -1,0 +1,40 @@
+{
+  "name": "temel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "arch:check": "steiger ./src && knip",
+    "verify": "npm run typecheck && npm run lint && npm run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "hooks:install": "lefthook install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@feature-sliced/steiger-plugin": "^0.7.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "10.8",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-security": "^4.0.1",
+    "knip": "6.30",
+    "lefthook": "^2.1.10",
+    "prettier": "^3.9.6",
+    "steiger": "^0.6.0",
+    "typescript": "5.9",
+    "typescript-eslint": "8.65",
+    "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "lefthook@2.1.10": true
+  }
+}

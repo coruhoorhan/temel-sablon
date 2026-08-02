@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# verify-commit-msg — plan kapısı (Katman 2/5, ajan-bağımsız)
+# commit-msg hook + CI'da aynı script. Onaylanmış plan referansı olmadan commit RED.
+# Çıkış: 0=geçti · 1=blok (git hook ve CI bunu reddeder)
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLANS_DIR="$ROOT/.archcore/plans"
+MSG_FILE="${1:-}"   # commit-msg hook argümanı; CI'da commit mesajı stdin/argv
+
+# --- plan referansını bul ---
+msg=""
+if [[ -n "$MSG_FILE" && -f "$MSG_FILE" ]]; then
+  msg="$(cat "$MSG_FILE")"
+elif [[ "$MSG_FILE" == "-" ]]; then
+  msg="$(cat)"
+else
+  msg="${MSG_FILE:-$(cat)}"
+fi
+
+plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
+
+if [[ -z "$plan_id" ]]; then
+  echo "[plan-gate] HATA: 'plan: <id>' trailer'ı eksik. Önce .archcore/plans/<id>.plan.md onaylatın." >&2
+  echo "[plan-gate] Örn: feat(auth): ...\n\nplan: auth-refresh-tokens" >&2
+  exit 1
+fi
+
+plan_file="$PLANS_DIR/$plan_id.plan.md"
+if [[ ! -f "$plan_file" ]]; then
+  echo "[plan-gate] HATA: $plan_file bulunamadı." >&2
+  exit 1
+fi
+
+# --- status + onay + hash kontrolü ---
+status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$plan_file" | head -n1)"
+approved_by="$(sed -nE 's/^approved_by:[[:space:]]*(.*)/\1/p' "$plan_file" | head -n1)"
+
+if [[ "$status" != "accepted" ]]; then
+  echo "[plan-gate] HATA: plan '$plan_id' durumu '$status' — accepted değil. İnsan onayı gerek." >&2
+  exit 1
+fi
+
+body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
+stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
+if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+  echo "[plan-gate] HATA: plan '$plan_id' onay sonrası değişmiş (hash uyuşmuyor). Yeniden onaylatın." >&2
+  exit 1
+fi
+
+if [[ -z "$approved_by" ]]; then
+  echo "[plan-gate] HATA: plan '$plan_id' approved_by boş — insan onayı kaydı yok." >&2
+  exit 1
+fi
+
+echo "[plan-gate] OK: '$plan_id' — onaylayan: $approved_by"
+exit 0

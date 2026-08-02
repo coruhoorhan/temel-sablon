@@ -1,0 +1,48 @@
+# Trivy taraması (K3) — TEMEL şablonu · FAZ 3
+# Konteyner YOK (TypeScript/Vite kitaplığı) → scan-type: fs + scan-ref: .
+# npm lockfile + proje dosyaları taranır (bağımlılık CVE'si + secret/config desenleri).
+# Forgejo notu: trivy-action GitHub'a özel. Forgejo'da eşdeğer (pre-receive/CI):
+#   trivy fs --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed .
+# SARIF yükleme (GitHub code scanning / upload-sarif, security-events: write) BİLEREK
+# YOK — future work; Forgejo'da SARIF görüntüleme yok, dosya yine de üretilir.
+
+name: security-container
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trivy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-fs:
+    name: trivy (fs · HIGH/CRITICAL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # v0.36.0: floating @master yerine imzalı immutable etiket (trivy-action
+      # 0.35.0 etiket olayı sonrası v-prefix'li imzalı release'lere geçti).
+      - name: Trivy filesystem taraması
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: 1
+        # Solo proje: FP gürültüsü commit'i engellemesin (risk #4, hedef <%20 FP).
+        # exit-code 1 korunur → bulgu varsa adım kırmızı görünür ama job yeşil kalır.
+        # FAZ 6: baseline + yeni-kod eşiği sonrası continue-on-error kaldırılıp
+        # gerçek kapıya çevrilir.
+        continue-on-error: true

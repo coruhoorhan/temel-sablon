@@ -1,0 +1,39 @@
+---
+id: <plan-id>                  # kebab-case, benzersiz (örn: auth-refresh-tokens)
+status: draft                  # draft → pending_review → accepted → rejected | superseded
+created: <ISO-8601>
+approved_by: <insan-adı>       # ajan asla yazmaz (kendini onaylama yasak)
+last_approved: <ISO-8601>      # accepted'a geçiş anı; düzenleme → yeniden onay
+last_review_date: <ISO-8601>   # onay anında last_approved ile eşitlenir; gözden geçirme sonrası tazelenir
+ttl_days: 90                   # 90 gün yaş eşiği (Bölüm 8.3 madde 6; verify-drift tarar)
+plan_hash: <sha256-of-body>    # onay sonrası body değişirse kapı yeniden onay ister
+scope:
+  allowed_paths:               # kapının izin verdiği dosya globları (yoksa = geniş, reddedilir)
+    - src/features/auth/**
+    - config/*
+  allowed_commands:            # onay kapsamındaki komutlar (doldurulabilir)
+    - npm run typecheck
+    - npm test
+
+---
+
+# <plan-id> — <başlık>
+
+## Bağlam
+Neden? Hangi problem/özellik? (ticket/issue ref zorunlu)
+
+## Çözüm tasarımı
+Mimari yaklaşım, etkilenen katmanlar/slice'lar, karar alternatifleri.
+
+## Etkilenen dosyalar
+- [ ] src/features/auth/model/session.ts (yeni)
+- [ ] src/features/auth/api/refresh.ts (düzenle)
+
+## Test planı
+Hangi testler, hangi senaryolar (happy/unhappy), coverage etkisi.
+
+## Geri alma planı
+Nasıl geri alınır? (revert commit / feature flag)
+
+## Riskler
+Bilinmeyenler, dış bağımlılıklar, güvenlik notları.

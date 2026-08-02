@@ -1,0 +1,21 @@
+# TEMEL — Prettier ignore (FAZ 3)
+# Net etki: src/**/*.{ts,tsx} dışında hiçbir dosya formatlanmaz.
+
+# Sıralı/gereksiz dizinler
+node_modules
+dist
+coverage
+.git
+
+# Şablon belgeleri formatlanmasın (markdown/kural dosyaları dokunulmaz)
+.archcore
+.github
+
+# Lockfile + lefthook config (YAML yorum satırları hassas, Prettier bozar)
+package-lock.json
+lefthook.yml
+
+# src/ hariç kök düzeyindeki her şey ignore → yalnız src/**/*.ts formatlanır
+*
+!src/
+!src/**

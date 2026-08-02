@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# verify-drift — TTL/yaş kontrolü (.archcore belgeleri, bilgi amaçlı)
+# Bölüm 8.3 madde 6 TTL kontratı: ttl_days / last_review_date (eşik 30 gün drift / 90 gün yaş).
+# Yalnız TTL/yaş kontrolü yapar (tek sorumluluk) — içerik-kod drift'i ayrı araçların işi.
+# Varsayılan: bayat belgeleri listeler, exit 0 (belge güncelleme insan işi, madde 4: PR'dan geçer).
+# --strict: en az bir bayat belge varsa exit 1 (aylık/çeyreklik bakım görevi).
+# Hedef: Linux (GNU date -d/+%s); mac/BSD uyumu gerekmez.
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+DOC_ROOT="$ROOT/.archcore"
+STRICT=0
+[[ "${1:-}" == "--strict" ]] && STRICT=1
+
+TODAY="$(date -u +%s)"
+scanned=0
+stale_count=0
+warn_count=0
+
+while IFS= read -r f; do
+  [[ "$(head -n1 "$f")" == "---" ]] || continue    # frontmatter yok → TTL yönetimi dışı
+  scanned=$((scanned + 1))
+
+  last_review="$(sed -nE 's/^last_review_date:[[:space:]]*([A-Za-z0-9:.+T-]+).*/\1/p' "$f" | head -n1)"
+  ttl_days="$(sed -nE 's/^ttl_days:[[:space:]]*([0-9]+).*/\1/p' "$f" | head -n1)"
+  [[ -z "$ttl_days" ]] && ttl_days=90               # varsayılan: 90 gün yaş eşiği (madde 6)
+
+  if [[ -z "$last_review" ]]; then
+    echo "UYARI: $f — last_review_date yok (TTL varsayılanı $ttl_days gün)" >&2
+    warn_count=$((warn_count + 1)); continue
+  fi
+
+  review_epoch="$(date -u -d "$last_review" +%s 2>/dev/null)" || {
+    echo "UYARI: $f — geçersiz last_review_date '$last_review'" >&2
+    warn_count=$((warn_count + 1)); continue
+  }
+
+  expiry_epoch=$((review_epoch + ttl_days * 86400))
+  if [[ "$expiry_epoch" -lt "$TODAY" ]]; then
+    stale_days=$(( (TODAY - expiry_epoch + 86399) / 86400 ))   # tavan: kısmi gün = 1 gün
+    echo "[drift] $f — $stale_days gün bayat (son gözden geçirme: $last_review, TTL: $ttl_days gün)"
+    echo "        öneri: gözden geçir ve last_review_date güncelle"
+    stale_count=$((stale_count + 1))
+  fi
+done < <(find "$DOC_ROOT" -type f -name '*.md' \
+  ! -path '*/templates/*' \
+  ! -name 'README.md' ! -name 'AGENTS.md')          # köprü dosyaları tarama dışı
+
+echo "--- özet: $scanned belge tarandı, $stale_count bayat, $warn_count uyarı ---"
+if [[ "$STRICT" -eq 1 && "$stale_count" -gt 0 ]]; then
+  echo "[verify-drift] --strict: $stale_count bayat belge — gözden geçirilecek." >&2
+  exit 1
+fi
+exit 0

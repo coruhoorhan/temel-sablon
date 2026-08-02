@@ -1,0 +1,13 @@
+# Satır sonu — hedef Linux (Bölüm 2.13-E: CRLF tuzaklarına karşı)
+* text=auto eol=lf
+
+# Scriptler daima LF + executable bayrağı korunsun
+*.sh text eol=lf
+.archcore/bin/* text eol=lf
+
+# Binary'ler asla normalize edilmez
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

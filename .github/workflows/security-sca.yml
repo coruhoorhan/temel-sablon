@@ -1,0 +1,46 @@
+# SCA (K3) — TEMEL şablonu · FAZ 3 (OSV-Scanner)
+# V4-4 (yeni bağımlılık güvenilirliği) kapısı: yalnız lockfile tarar —
+# .env/source DEĞİL (secret taraması K1 gitleaks'in işi, R4-04).
+# Action notu: google/osv-scanner-action@v1 tag'i YOK (etiketler tam sürüm;
+# güncel: v2.3.8) → sabit sürüme pinlendi.
+# Forgejo alternatifi (Bölüm 12.3): action yerine CLI — osv-scanner --lockfile=package-lock.json
+
+name: security-sca
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sca-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-sca:
+    name: SCA (OSV-Scanner, package-lock.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # plan-gate ile tutarlılık (ci.yml fetch-depth: 0 şartı)
+          fetch-depth: 0
+      # Node gerekmez: osv-scanner container action — npm ci kurulumu yok.
+      - name: osv-scanner (lockfile)
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
+        env:
+          GOTOOLCHAIN: auto
+        with:
+          scan-args: |-
+            --lockfile=package-lock.json
+      # continue-on-error neden: OSV exit 1 = SEVİYE FİLTRESİZ herhangi bir bulgu
+      # (npm audit --audit-level=high karşılığı yok) → solo projede gürültü commit'i
+      # engellemesin (ci.yml security-baseline deseni). Yalnız-yeni-bulgu bloklamak
+      # için PR diff modu (osv-scanner-reporter --old/--new) gerekir — security-events:
+      # write + code scanning ister, GitHub'a özgü (Forgejo'da SARIF/code-scanning yok).

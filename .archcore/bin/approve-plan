@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# approve-plan — plan onay scripti (İNSAN çalıştırır)
+# .archcore/plans/<id>.plan.md: draft → accepted, approved_by + last_approved + plan_hash yazar.
+# Ajan kendini onaylayamaz: approved_by girdisi insan tarafından doğrulanmalı (AGENTS.md NEVER).
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLANS_DIR="$ROOT/.archcore/plans"
+
+if [[ $# -lt 1 ]]; then
+  echo "Kullanım: $0 <plan-id> [onaylayan-adı]" >&2
+  exit 1
+fi
+
+PLAN_ID="$1"
+APPROVER="${2:-}"
+PLAN_FILE="$PLANS_DIR/$PLAN_ID.plan.md"
+
+[[ -f "$PLAN_FILE" ]] || { echo "HATA: $PLAN_FILE yok" >&2; exit 1; }
+
+status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$PLAN_FILE" | head -n1)"
+if [[ "$status" == "accepted" ]]; then
+  echo "UYARI: '$PLAN_ID' zaten accepted — yeniden onay, hash'i tazeler" >&2
+fi
+[[ "$status" == "rejected" || "$status" == "superseded" ]] && { echo "HATA: '$PLAN_ID' $status — revize edip yeni onay iste" >&2; exit 1; }
+
+if [[ -z "$APPROVER" ]]; then
+  read -rp "Onaylayan adı: " APPROVER
+fi
+[[ -z "$APPROVER" ]] && { echo "HATA: onaylayan adı zorunlu" >&2; exit 1; }
+
+# --- özet göster, doğrulat (catch-22: script de yanlışlıkla onaylamasın) ---
+echo "--- onaylanacak plan ---"
+sed -n '1,12p' "$PLAN_FILE"
+read -rp "Bu planı onaylıyor musun? [y/N] " CONFIRM
+[[ "$CONFIRM" == "y" || "$CONFIRM" == "Y" ]] || { echo "İptal — plan değişmedi." >&2; exit 1; }
+
+NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# --- önce statü/onay alanları (plan_hash hariç — hash SON içerikten hesaplanır) ---
+# last_review_date onay anına eşitlenir (TTL kontratı, Bölüm 8.3 madde 6);
+# ttl_days yoksa varsayılan eklenir. Sıra kritik: hash bu yazımlardan SONRA gelmeli,
+# yoksa kendisiyle çelişir (verifier kapısı hash'i body'den doğrular).
+sed -i \
+  -e "s/^status:.*/status: accepted/" \
+  -e "s/^approved_by:.*/approved_by: $APPROVER/" \
+  -e "s/^last_approved:.*/last_approved: $NOW/" \
+  -e "s/^last_review_date:.*/last_review_date: $NOW/" \
+  "$PLAN_FILE"
+if ! grep -q '^last_review_date:' "$PLAN_FILE"; then
+  sed -i "/^last_approved:/a last_review_date: $NOW" "$PLAN_FILE"
+fi
+if ! grep -q '^ttl_days:' "$PLAN_FILE"; then
+  sed -i "/^last_review_date:/a ttl_days: 90" "$PLAN_FILE"
+fi
+
+# --- hash: frontmatter'daki plan_hash satırı hariç body (SON içerik) ---
+HASH="$(sed '/^plan_hash:/d' "$PLAN_FILE" | sha256sum | cut -d' ' -f1)"
+
+sed -i \
+  -e "s/^plan_hash:.*/plan_hash: $HASH/" \
+  "$PLAN_FILE"
+
+echo "OK: '$PLAN_ID' onaylandı — $APPROVER @ $NOW"
+echo "plan_hash: $HASH"
+echo "İpucu: commit'e 'plan: $PLAN_ID' trailer'ı ekle"
