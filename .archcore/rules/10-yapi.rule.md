@@ -1,49 +1,49 @@
 ---
-description: YapÄ± kurallarÄ± â€” FSD klasÃ¶r ÅŸemasÄ±, dosya adlandÄ±rma, bileÅŸen dÃ¼zeni
+description: Yapı kuralları — FSD klasör şeması, dosya adlandırma, bileşen düzeni
 globs: src/**
 priority: P1
 last_review_date: 2026-08-02
 ttl_days: 90
 ---
 
-# 10. YapÄ±
+# 10. Yapı
 
-**Kaynak:** FSD guide (feature-sliced.design) Â· Airbnb JS Â· Prettier/Biome Â· verifier
-**Zorlama:** makine kurallarÄ± + verifier (FSD niyeti, adlandÄ±rma tutarlÄ±lÄ±ÄŸÄ±)
+**Kaynak:** FSD guide (feature-sliced.design) · Airbnb JS · Prettier/Biome · verifier
+**Zorlama:** makine kuralları + verifier (FSD niyeti, adlandırma tutarlılığı)
 
 ## ALWAYS
 
-### R10-01 Â· FSD klasÃ¶r ÅŸemasÄ±
-**Ne:** `app/ pages/ widgets/ features/ entities/ shared/` â€” her slice: `ui/ model/ lib/ api/ config/`.
-**Neden:** dosya konumu = sorumluluk; ajan 150 satÄ±rlÄ±k dosyayÄ± doÄŸru baÄŸlamda bulur.
+### R10-01 · FSD klasör şeması
+**Ne:** `app/ pages/ widgets/ features/ entities/ shared/` — her slice: `ui/ model/ lib/ api/ config/`.
+**Neden:** dosya konumu = sorumluluk; ajan 150 satırlık dosyayı doğru bağlamda bulur.
 **Zorlayan:** Steiger (FAZ 1) + verifier (V10-1)
 
-### R10-02 Â· jsx-pascal-case (bileÅŸen adlarÄ±)
-**Ne:** JSX bileÅŸenleri PascalCase. **Zorlayan:** `react/jsx-pascal-case` (error)
+### R10-02 · jsx-pascal-case (bileşen adları)
+**Ne:** JSX bileşenleri PascalCase. **Zorlayan:** `react/jsx-pascal-case` (error)
 
-### R10-03 Â· jsx-filename-extension
-**Ne:** JSX yalnÄ±zca `.tsx`. **Zorlayan:** `react/jsx-filename-extension` (error)
+### R10-03 · jsx-filename-extension
+**Ne:** JSX yalnızca `.tsx`. **Zorlayan:** `react/jsx-filename-extension` (error)
 
-### R10-04 Â· sort-comp + func-style
-**Ne:** bileÅŸen Ã¼ye sÄ±rasÄ± sabit; fonksiyon bildirimi tutarlÄ± (const arrow). **Zorlayan:** `react/sort-comp` + `func-style` (error)
+### R10-04 · sort-comp + func-style
+**Ne:** bileşen üye sırası sabit; fonksiyon bildirimi tutarlı (const arrow). **Zorlayan:** `react/sort-comp` + `func-style` (error)
 
-### R10-05 Â· Dosya adlandÄ±rma deseni
+### R10-05 · Dosya adlandırma deseni
 **Ne:** kebab-case dosyalar; test `*.test.ts(x)`, story `*.stories.tsx`, tipler `*.types.ts`.
-**Neden:** glob kuralÄ± (R9-01 muaf listesi) adlandÄ±rmaya baÄŸlÄ± â€” tutarsÄ±zlÄ±k boyut denetimini deler.
-**Zorlayan:** glob doÄŸrulamasÄ± (K1: `git diff --name-only` + pattern check) + verifier
+**Neden:** glob kuralı (R9-01 muaf listesi) adlandırmaya bağlı — tutarsızlık boyut denetimini deler.
+**Zorlayan:** glob doğrulaması (K1: `git diff --name-only` + pattern check) + verifier
 
 ## ASK FIRST
-- R10-A1: yeni slice tanÄ±mÄ± â†’ FSD niyeti toplantÄ±sÄ± (segment ÅŸemasÄ± + public API)
-- R10-A2: shared/ bÃ¼yÃ¼mesi â†’ kategori mi yoksa entity mi? (shared ÅŸiÅŸerse taÅŸÄ±)
-- R10-A3: index.ts public API geniÅŸlemesi â†’ gerÃ§ekten dÄ±ÅŸa aÃ§Ä±k olmalÄ± mÄ±? (kapsÃ¼lleme)
+- R10-A1: yeni slice tanımı → FSD niyeti toplantısı (segment şeması + public API)
+- R10-A2: shared/ büyümesi → kategori mi yoksa entity mi? (shared şişerse taşı)
+- R10-A3: index.ts public API genişlemesi → gerçekten dışa açık olmalı mı? (kapsülleme)
 
 ## NEVER
-- âŒ klasÃ¶r yapÄ±sÄ±nda istisna (katman atlama, ortak dosyalar)
-- âŒ bir dosyada birden Ã§ok sorumluluk (component + hook + api) â€” 150 satÄ±r zaten zorlar
-- âŒ `index.ts` dÄ±ÅŸÄ±na import (R2-02 ile aynÄ±)
-- âŒ Turkish/karÄ±ÅŸÄ±k dil dosya adlarÄ± (ascii kebab-case)
+- ❌ klasör yapısında istisna (katman atlama, ortak dosyalar)
+- ❌ bir dosyada birden çok sorumluluk (component + hook + api) — 150 satır zaten zorlar
+- ❌ `index.ts` dışına import (R2-02 ile aynı)
+- ❌ Turkish/karışık dil dosya adları (ascii kebab-case)
 
 ## Verifier maddeleri
-- V10-1: yeni dosyanÄ±n segmenti sorumluluÄŸuna uygun mu? (FSD niyeti)
-- V10-2: adlandÄ±rma glob kurallarÄ±na uyuyor mu? (boyut muaf listesiyle tutarlÄ± mÄ±?)
-- V10-3: public API'ye sÄ±zan iÃ§ detay var mÄ±? (kapsÃ¼lleme deliÄŸi)
+- V10-1: yeni dosyanın segmenti sorumluluğuna uygun mu? (FSD niyeti)
+- V10-2: adlandırma glob kurallarına uyuyor mu? (boyut muaf listesiyle tutarlı mı?)
+- V10-3: public API'ye sızan iç detay var mı? (kapsülleme deliği)
