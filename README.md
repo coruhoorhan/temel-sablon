@@ -30,10 +30,12 @@ temel/
 ## Kurulum (yeni proje)
 
 1. Şablonu kopyala: `cp -r temel/. <yeni-proje>/`
-2. Bağımlılıkları kur: `npm install && npm run hooks:install`
-3. **Sistem araçları (npm DEĞİL):** `gitleaks` — `apt install gitleaks` / `brew install gitleaks` / `go install github.com/gitleaks/gitleaks/v8@latest` (npm'de "gitleaks" adlı paket SAHTEDİR, kurma)
-4. Plan onay akışını kur: `cp .archcore/plans/README.md` içeriğini oku (bkz. aşağısı)
-5. FAZ 1-6'ya göre makine yığınını kur (doküman Bölüm 5)
+2. Git'i başlat (**main** dalı — CI workflow'ları main dinler):
+   `git init && git branch -M main`
+3. Bağımlılıkları kur: `npm install && npm run hooks:install`
+4. **Sistem araçları (npm DEĞİL):** `gitleaks` — `apt install gitleaks` / `brew install gitleaks` / `go install github.com/gitleaks/gitleaks/v8@latest` (npm'de "gitleaks" adlı paket SAHTEDİR, kurma)
+5. Plan onay akışını kur: `cp .archcore/plans/README.md` içeriğini oku (bkz. aşağısı)
+6. FAZ 1-6'ya göre makine yığınını kur (doküman Bölüm 5)
 
 ## Çalışma döngüsü (ajan + insan)
 
