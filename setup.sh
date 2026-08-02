@@ -141,10 +141,10 @@ fi
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
   info "GitHub repo oluşturuluyor ($VIS)"
   GH="$(use gh)"
-  if $GH repo create "$PROJ_NAME" "--$VIS" --source . --remote origin --push >/dev/null 2>&1; then
-    ok "repo hazır: https://github.com/$GH_USER/$PROJ_NAME"
+  if $GH repo create "$PROJ_NAME" "--$VIS" --source . --remote origin >/dev/null 2>&1; then
+    ok "repo hazır: https://github.com/$GH_USER/$PROJ_NAME (ilk commit'ten sonra push: git push)"
   else
-    warn "repo oluşturulamadı (auth/git yapılandırması?) — ilk commit'ten sonra elle: gh repo create $PROJ_NAME --$VIS --source . --push"
+    warn "repo oluşturulamadı (auth/git yapılandırması?) — ilk commit'ten sonra elle: gh repo create $PROJ_NAME --$VIS --source . --remote origin"
   fi
 fi
 
@@ -193,6 +193,7 @@ Sıradaki adımlar (sen + ajan):
   2. Ajandan ilk planı yazmasını iste (.archcore/plans/<id>.plan.md, status: draft)
   3. Planı oku, onayla (status: accepted + approved_by + plan_hash)
   4. Ajan onaylı scope'ta kod yazar, commit'e 'plan: <id>' trailer'ı ekler
-  5. Kapılar: pre-commit → commit-msg → pre-push → CI otomatik çalışır
+  5. İlk commit: git add . && git commit -m 'feat: ilk plan' -m 'plan: <id>' → git push (origin bağlıysa)
+  6. Kapılar: pre-commit → commit-msg → pre-push → CI otomatik çalışır
 "
 exit "$fail_count"
