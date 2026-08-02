@@ -29,6 +29,17 @@ temel/
 
 ## Kurulum (yeni proje)
 
+**En kolay yol:** şablonu kopyala (veya template'ten repo oluştur), sonra:
+
+```bash
+cd <yeni-proje> && bash setup.sh
+```
+
+Script interaktiftir: proje adı, GitHub bilgileri, repo görünürlüğü sorar;
+kurulum + kapı testi + doğrulamayı yapar, sonunda ne yapılacağını anlatır.
+
+Elle kurulum (script'siz):
+
 1. Şablonu kopyala: `cp -r temel/. <yeni-proje>/`
 2. Git'i başlat (**main** dalı — CI workflow'ları main dinler):
    `git init && git branch -M main`
