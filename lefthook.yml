@@ -40,6 +40,7 @@ pre-push:
   jobs:
     - name: plan-gate-push
       run: .archcore/bin/verify-push origin
+      use_stdin: true   # pre-push ref'lerini stdin'den okur (verify-push bunu kullanır)
     - name: drift
       # Bilgi amaçlı — exit 0; bayat .archcore belgelerini push anında hatırlatır
       # (TTL kontratı, Bölüm 8.3 madde 6; --strict aylık bakımda: verify-drift --strict)

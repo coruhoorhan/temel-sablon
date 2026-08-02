@@ -1,6 +1,6 @@
 # TEMEL — Ajan-Hazır Proje Şablonu
 
-Her projede kopyala-başlat: kural kataloğu (10 kategori), plan onay kapısı
+Her projede kopyala-başlat: kural kataloğu (11 kategori), plan onay kapısı
 (ajan-bağımsız, git-merkezli), commit öncesi doğrulama altyapısı.
 
 > Mimari doküman: `TEMEL-MIMARI.md` (projenin dışında, şablonun özelliği değil).
@@ -18,12 +18,12 @@ temel/
     ├── plans/                 onay state'i — <id>.plan.md (status/hash/scope)
     ├── templates/
     │   └── plan.plan.md.tmpl  plan şablonu
-    ├── rules/                 10 kural dosyası (01-tipler … 10-yapi)
+    ├── rules/                 11 kural dosyası (01-tipler … 11-hafiza)
     └── bin/                   kapı scriptleri (hook + CI + sunucu aynı kod)
         ├── verify-commit-msg
         ├── verify-push
         └── verify-pr
-└── .agents/skills/plan-gate/  20+ ajanda çalışan plan akışı (SKILL.md)
+└── .agents/skills/plan-gate/  20+ ajanla çalışan plan akışı (SKILL.md)
 └── .opencode/agents/verifier.md  LLM denetçi ajan tanımı
 ```
 
@@ -34,7 +34,7 @@ temel/
    `git init && git branch -M main`
 3. Bağımlılıkları kur: `npm install && npm run hooks:install`
 4. **Sistem araçları (npm DEĞİL):** `gitleaks` — `apt install gitleaks` / `brew install gitleaks` / `go install github.com/gitleaks/gitleaks/v8@latest` (npm'de "gitleaks" adlı paket SAHTEDİR, kurma)
-5. Plan onay akışını kur: `cp .archcore/plans/README.md` içeriğini oku (bkz. aşağısı)
+5. Plan onay akışını oku: `.archcore/plans/README.md` (yaşam döngüsü, bkz. aşağısı)
 6. FAZ 1-6'ya göre makine yığınını kur (doküman Bölüm 5)
 
 ## Çalışma döngüsü (ajan + insan)

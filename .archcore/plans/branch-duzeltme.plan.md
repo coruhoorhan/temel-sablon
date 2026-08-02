@@ -3,15 +3,16 @@ id: branch-duzeltme
 status: accepted
 created: 2026-08-02
 approved_by: Kullanici
-last_approved: 2026-08-02T10:55:54Z
-last_review_date: 2026-08-02T10:55:54Z
+last_approved: 2026-08-02T11:28:48Z
+last_review_date: 2026-08-02T11:28:48Z
 ttl_days: 90
-plan_hash: 47a3dacef8d8dedbe51440b18025af129b5b1f527107f9e2de5ffb458ffadc16
+plan_hash: 72cceb52f7d2e2e13c68ee98609881bf99ce48e0c2248c2cced459f5054f1001
 scope:
   allowed_paths:
     - README.md
     - lefthook.yml
     - .github/workflows/ci.yml
+    - .archcore/plans/**
   allowed_commands:
     - git branch -M main
     - git push

@@ -54,14 +54,30 @@ check_commit() {
   return 0
 }
 
-# İtilen commit'leri listele (pre-push stdin: "<local> <remote> <sha>" satırları)
-while read -r local_ref remote_ref; do
+# İtilen commit'leri listele (pre-push stdin: "<local_ref> <local_sha> <remote_ref> <remote_sha>" satırları)
+# veya hook stdin sağlamıyorsa --not --all yedeği (eski davranış, 0 sonuç riski — tercih edilmez).
+found_range=0
+while read -r local_ref local_sha remote_ref remote_sha; do
   [[ "$local_ref" == "(delete)" ]] && continue
-  range="${local_ref}"
+  if [[ "$local_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    if [[ "$remote_sha" =~ ^0{40}$ || -z "$remote_sha" ]]; then
+      range="${local_sha}"        # yeni dal / ilk push → tüm yerel geçmiş
+    else
+      range="${remote_sha}..${local_sha}"
+    fi
+    found_range=1
+    for cid in $(git rev-list "$range" 2>/dev/null | tac); do
+      check_commit "$cid" || fail_count=$((fail_count + 1))
+    done
+  fi
+done
+
+if [[ "$found_range" -eq 0 ]]; then
+  range="$(git rev-parse --abbrev-ref HEAD)"
   for cid in $(git rev-list --not --all "$range" 2>/dev/null | tac); do
     check_commit "$cid" || fail_count=$((fail_count + 1))
   done
-done
+fi
 
 [[ $fail_count -gt 0 ]] && { echo "[plan-gate] $fail_count commit reddedildi." >&2; exit 1; }
 exit 0

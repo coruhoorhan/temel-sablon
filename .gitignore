@@ -13,6 +13,14 @@ coverage/
 .env.*
 !.env.example
 
+# Keys/secrets — gitleaks'e ikinci katman
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+*.secret
+
 # Logs
 *.log
 npm-debug.log*
