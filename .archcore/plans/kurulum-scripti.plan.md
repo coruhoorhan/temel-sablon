@@ -6,7 +6,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:53:50Z
 last_review_date: 2026-08-02T11:53:50Z
 ttl_days: 90
-plan_hash: 45d12fef2bd34d89c8c4f39eff9d845e2e9e026be2f34c4aedf5431491a95e08
+plan_hash: 441033ab2255461617a40165da45051b1184da31c84ef1f38f86b337a31b1298
 scope:
   allowed_paths:
     - setup.sh
@@ -14,6 +14,7 @@ scope:
     - .archcore/plans/**
     - .archcore/bin/verify-pr
     - package.json
+    - .github/workflows/security-sast.yml
   allowed_commands:
     - bash setup.sh
     - npm run verify
