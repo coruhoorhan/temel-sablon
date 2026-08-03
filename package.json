@@ -16,7 +16,7 @@
     "verify": "npm run typecheck && npm run lint && npm run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "hooks:install": "lefthook install"
+    "hooks:install": "lefthook install --force"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",

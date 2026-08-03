@@ -11,7 +11,12 @@ BASE="${1:-origin/main}"
 HEAD="${2:-HEAD}"
 
 fail_count=0
-for cid in $(git rev-list "$BASE..$HEAD" 2>/dev/null); do
+REVS=$(git rev-list "$BASE..$HEAD" 2>/dev/null || true)
+if [[ -z "$REVS" ]]; then
+  REVS=$(git rev-list "$HEAD" --not --remotes 2>/dev/null || git rev-list -1 "$HEAD")
+fi
+
+for cid in $REVS; do
   msg="$(git log -1 --format=%B "$cid")"
   plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
 

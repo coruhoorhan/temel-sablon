@@ -6,12 +6,14 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:53:50Z
 last_review_date: 2026-08-02T11:53:50Z
 ttl_days: 90
-plan_hash: 9474bf680e62bb2d45119e193b476bf86e50c4ffa0369236e5563bbb470daf8f
+plan_hash: 45d12fef2bd34d89c8c4f39eff9d845e2e9e026be2f34c4aedf5431491a95e08
 scope:
   allowed_paths:
     - setup.sh
     - README.md
     - .archcore/plans/**
+    - .archcore/bin/verify-pr
+    - package.json
   allowed_commands:
     - bash setup.sh
     - npm run verify
