@@ -1,0 +1,74 @@
+# =============================================================================
+# .agt/mcp-gateway.yaml.template — MCP Security Gateway (F3 · T3.3)
+# =============================================================================
+# Kopyala:  cp .agt/mcp-gateway.yaml.template .agt/mcp-gateway.yaml
+# Referans: AGT MCP Security Gateway Spec v1.0 (microsoft/agent-governance-toolkit)
+#           agent_os/mcp_gateway.py · mcp_response_scanner.py · mcp_message_signer.py
+#           mcp_session_auth.py · mcp_sliding_rate_limiter.py · mcp_cve_feed.py
+#
+# Amaç: ajan ile MCP server'lar arasındaki HER tool çağrısını ve yanıtını
+# denetler. Fail-closed: bilinmeyen ajan = bütçe yok, oturum yok, erişim yok.
+# =============================================================================
+
+# --- Gateway (tool call interception) ---
+gateway:
+  # allow_tools: boş = hepsine izin (deny listesi önceliklidir)
+  allowed_tools: []
+  # deny_tools: koşulsuz engellenen tool adları (policy.yaml ile çift katman)
+  denied_tools:
+    - "git_force_push"
+    - "fs_delete"
+    - "rm"
+    - "fs_overwrite"
+  # sensitive_tools: insan onayı gerektiren tool'lar (approval_callback)
+  sensitive_tools:
+    - "web_fetch"
+    - "web_search"
+    - "browser_*"
+  # response_policy: BLOCK | SANITIZE | LOG  (flagged yanıt için)
+  response_policy: BLOCK
+  # builtin_sanitization: tehlikeli pattern'leri otomatik temizle
+  enable_builtin_sanitization: true
+
+# --- Response scanning (yanıt taraması) ---
+response_scanner:
+  enabled: true
+  # detect: prompt injection · credential leak · PII · exfiltration URL
+  scan_prompt_injection: true
+  scan_credentials: true
+  scan_pii: true
+  scan_exfiltration_urls: true
+
+# --- Message signing (HMAC-SHA256, replay koruması) ---
+message_signer:
+  enabled: true
+  algorithm: "HMAC-SHA256"
+  min_key_bytes: 32
+  replay_window_seconds: 300      # 5 dakika
+
+# --- Session auth (TTL + concurrency) ---
+session_auth:
+  enabled: true
+  session_ttl_seconds: 3600       # 1 saat
+  max_concurrent_sessions: 10
+  # deny_none: authentication olmadan bağlantıyı reddet (fail-closed)
+  deny_none: true
+
+# --- Rate limiting (sliding window) ---
+rate_limit:
+  enabled: true
+  max_calls_per_window: 100
+  window_seconds: 300             # 5 dakika
+
+# --- CVE feed (OSV.dev entegrasyonu) ---
+cve_feed:
+  enabled: true
+  source: "osv.dev"
+  # min_severity: bu seviye ve üzeri CVE'ler raporlanır (CI blocking)
+  min_severity: "high"
+
+# --- Trust-gated MCP (kimlik doğrulamalı erişim) ---
+trust_gating:
+  enabled: true
+  # min_trust_score: altındaki ajan MCP erişemez (manifest.yaml trust_score)
+  min_trust_score: 0.7

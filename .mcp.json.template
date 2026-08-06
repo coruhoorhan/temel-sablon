@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/mcp-config.schema.json",
+  "_comment": "TEMEL MCP server kayıtları (F3 · T3.1). Gerçek kullanımda .mcp.json'e kopyalanır. Midas MCP server otomatik eklenir (setup.sh wire_midas). Güvenlik: .agt/mcp-gateway.yaml (AGT spec v1.0) + mcpscan (CI) bu config'i denetler.",
+  "mcpServers": {
+    "midas": {
+      "command": "midas-mcp",
+      "env": {
+        "MIDAS_MCP_EMBEDDER": "local",
+        "MIDAS_MCP_NLI": "1",
+        "MIDAS_MCP_SUPERSEDE": "1",
+        "MIDAS_MCP_TTL": "chat=30,note=90,fact=180,constraint=365,decision=365,preference=180,correction=90"
+      }
+    },
+    "_template_example_remote": {
+      "_comment": "Uzaktan MCP server şablonu — gerçek URL ile değiştir. TLS + auth zorunludur (fail-closed). Bu örnek placeholder'dır; kullanırken '$MCP_TOKEN' env değişkenini gerçek token ile doldur. CI (mcp-scan) çözümlenmemiş değişkeni CRITICAL işaretler — gerçek kullanımda env export edilmeli.",
+      "url": "https://example.com/mcp"
+    }
+  }
+}

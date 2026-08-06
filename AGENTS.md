@@ -21,6 +21,13 @@
 - **Policy doğrulama:** `agt lint-policy --strict` + `agt test .agt/policy.yaml .agt/fixtures/` (fixture replay)
 - **Lehçe:** push öncesi `agt lint-policy` + prompt defense raporu (pre-push, fail-open — CI zorlar)
 
+## MCP Güvenliği (F3)
+- **Gateway:** `.agt/mcp-gateway.yaml` (tool interception + response scan + message signing + session auth + rate limit + CVE feed + trust gating)
+- **Server kayıtları:** `.mcp.json` (template'ten üretilir; midas-mcp otomatik eklenir)
+- **Tarama:** `npx @nileshbera/mcpscan scan --fail-on high` (client config) + AGT `mcp-scan` (primitives)
+- **Supply chain:** lockfile SHA-256 manifest (`.archcore/supply-chain-manifest.txt`) + OSV.dev CVE sorgusu
+- **CI:** `.github/workflows/mcpscan.yml` + `supply-chain.yml` (high+ bulgu = red)
+
 ## Kurallar (KATMAN 1 — bilgi)
 - **11 kural kategorisi:** `.archcore/rules/01-tipler.rule.md` … `11-hafiza.rule.md`
 - Her kural ya makine kapısına (ESLint kural ID / tsc flag / vitest eşiği) ya verifier kontrol listesine bağlıdır.

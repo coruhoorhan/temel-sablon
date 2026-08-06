@@ -1,0 +1,71 @@
+# mcpscan.yml — MCP Server Güvenlik Taraması CI Kapısı (F3 · T3.2)
+# Rol: MCP client config'lerindeki (IDE/ajan) server'ları tara —
+#      tool poisoning, rug-pull, credential leakage, RCE vektörleri, supply chain.
+# Zorlar: high+ bulgu = kırmızı build (fail-on high).
+# Ayrıca AGT mcp-scan ile primitives taraması (fingerprint + rapor).
+
+name: mcpscan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mcpscan-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  mcp-security:
+    name: MCP server güvenlik taraması
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      # npm ci yerine: mcpscan npx ile çalışır; bağımlılıklar repo'da (npm ci)
+      - run: npm ci --no-audit
+
+      # 1) mcpscan — client config taraması (high+ = fail)
+      - name: mcpscan scan (fail-on high)
+        run: |
+          npx -y @nileshbera/mcpscan scan --fail-on high --osv --json > /tmp/mcpscan-report.json || {
+            echo "::error:: MCP güvenlik bulgusu (high+) — rapor: /tmp/mcpscan-report.json"
+            exit 1
+          }
+          echo "✓ mcpscan: high+ bulgu yok"
+
+      # 2) AGT mcp-scan — MCP primitives taraması (stdio/SSE/streamable HTTP)
+      #    config POSITIONAL argümandır; --static-only: server başlatmadan
+      #    inline tool tanımlarını + config metadata'sını tarar (CI güvenli).
+      - name: AGT mcp-scan primitives
+        run: |
+          if command -v agt >/dev/null 2>&1 || [ -f "$HOME/.local/bin/agt" ]; then
+            export PATH="$HOME/.local/bin:$PATH"
+            PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
+            "$PY" -m agent_os.cli.mcp_scan scan .mcp.json.template --static-only --format table \
+              || echo "::warning:: AGT mcp-scan uyarı verdi (primitives raporu bilgi amaçlı)"
+          else
+            echo "::warning:: AGT yok — mcp-scan atlandı (agt-verify.yml kurar)"
+          fi
+
+      # 3) Artifact: mcpscan raporu (denetim izi)
+      - name: Upload mcpscan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpscan-report
+          path: /tmp/mcpscan-report.json
+          if-no-files-found: warn

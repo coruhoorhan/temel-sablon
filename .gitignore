@@ -44,3 +44,10 @@ npm-debug.log*
 # AGT — template'ten üretilen gerçek policy/fixture'lar commit'e girmez (setup.sh üretir).
 .agt/policy.yaml
 .agt/fixtures/policy.test.yaml
+.agt/mcp-gateway.yaml
+
+# MCP — template'ten üretilen gerçek config commit'e girmez (setup.sh üretir).
+.mcp.json
+
+# mcpscan — drift takibi durum dosyası (otomatik üretilir)
+.mcpscan/

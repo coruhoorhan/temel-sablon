@@ -187,6 +187,78 @@ wire_agt() {
   return 0
 }
 
+# ---------------------------------------------------------------------------
+# wire_mcp — MCP Security Gateway + supply chain doğrula (F3 · T3.1-3.4)
+# Kurulum: .mcp.json (template'ten) + .agt/mcp-gateway.yaml (template'ten)
+# Doğrulama: mcpscan scan (high+ = fail) + AGT mcp-scan (primitives taraması)
+# Supply chain: lockfile SHA-256 manifest + OSV CVE sorgusu
+# ---------------------------------------------------------------------------
+wire_mcp() {
+  info "MCP Security Gateway (F3)"
+  MCP_OK=0
+
+  # 1) .mcp.json üret (template'ten, varsa koru)
+  if [[ ! -f .mcp.json && -f .mcp.json.template ]]; then
+    cp .mcp.json.template .mcp.json
+    ok ".mcp.json üretildi (template'ten)"
+  elif [[ ! -f .mcp.json ]]; then
+    warn ".mcp.json.template YOK — MCP config üretilemedi"
+  else
+    info ".mcp.json zaten var — korunuyor"
+  fi
+
+  # 2) .agt/mcp-gateway.yaml üret (template'ten, varsa koru)
+  mkdir -p .agt
+  if [[ ! -f .agt/mcp-gateway.yaml && -f .agt/mcp-gateway.yaml.template ]]; then
+    cp .agt/mcp-gateway.yaml.template .agt/mcp-gateway.yaml
+    ok ".agt/mcp-gateway.yaml üretildi (template'ten)"
+  fi
+
+  # 3) mcpscan — client config taraması (high+ bulgu = fail)
+  if command -v npx >/dev/null 2>&1; then
+    if npx -y @nileshbera/mcpscan scan --fail-on high >/dev/null 2>&1; then
+      ok "mcpscan: high+ bulgu yok (client config taraması temiz)"
+      MCP_OK=1
+    else
+      warn "mcpscan high+ bulgu raporladı — ayrıntı: npx @nileshbera/mcpscan scan --fail-on high"
+    fi
+  else
+    warn "npx yok — mcpscan atlandı (CI mcpscan.yml zorlar)"
+  fi
+
+  # 4) AGT mcp-scan — MCP primitives taraması (bilgi amaçlı, fail-open)
+  #    config POSITIONAL argümandır (--config flag YOK — gerçek kullanım).
+  #    DİKKAT: python3 (sistem) değil, AGT'nin kendi Python'ı gerekir (uv tool
+  #    env — AGT paketi 3.12, sistem 3.14'te import edilemez).
+  if command -v agt >/dev/null 2>&1; then
+    AGT_PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
+    [[ -x "$AGT_PY" ]] || AGT_PY="$(dirname "$(command -v agt)")/python"
+    if "$AGT_PY" -m agent_os.cli.mcp_scan scan .mcp.json.template --static-only >/dev/null 2>&1; then
+      ok "AGT mcp-scan: primitives temiz"
+    else
+      warn "AGT mcp-scan uyarı verdi (primitives raporu — CI'da detay)"
+    fi
+  fi
+
+  # 5) Supply chain manifest (bilgi amaçlı — CI blocking)
+  if [[ -f package-lock.json ]]; then
+    HASH="$(sha256sum package-lock.json | cut -d' ' -f1)"
+    if [[ -f .archcore/supply-chain-manifest.txt ]]; then
+      if [[ "$(cat .archcore/supply-chain-manifest.txt)" == "$HASH" ]]; then
+        ok "supply chain: lockfile bütünlüğü doğrulandı"
+      else
+        warn "supply chain: lockfile DEĞİŞMİŞ — .archcore/supply-chain-manifest.txt güncelle (yeni: $HASH)"
+      fi
+    else
+      echo "$HASH" > .archcore/supply-chain-manifest.txt
+      ok "supply chain manifesti oluşturuldu: $HASH"
+    fi
+  fi
+
+  [[ "$MCP_OK" -eq 0 ]] && warn "NOT: mcpscan high+ bulgu/atlandı — CI mcpscan.yml durumu zorlar"
+  return 0
+}
+
 # --- ön koşul kontrolü ---
 step "ÖN KOŞULLAR"
 for tool in git npm node; do
@@ -318,6 +390,13 @@ if wire_agt; then
   ok "AGT kurulum + doğrulama tamam"
 else
   fail "AGT kurulum başarısız"; fail_count=$((fail_count + 1))
+fi
+
+info "MCP Security Gateway (F3)"
+if wire_mcp; then
+  ok "MCP gateway + supply chain doğrulama tamam"
+else
+  fail "MCP gateway kurulum başarısız"; fail_count=$((fail_count + 1))
 fi
 
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
