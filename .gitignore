@@ -45,9 +45,14 @@ npm-debug.log*
 .agt/policy.yaml
 .agt/fixtures/policy.test.yaml
 .agt/mcp-gateway.yaml
+.agt/manifest.yaml
 
 # MCP — template'ten üretilen gerçek config commit'e girmez (setup.sh üretir).
 .mcp.json
 
 # mcpscan — drift takibi durum dosyası (otomatik üretilir)
 .mcpscan/
+
+# Merkle audit — zincir dosyası + dashboard (otomatik üretilir)
+.archcore/audit-chain.json
+docs/governance-dashboard.html

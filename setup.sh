@@ -259,6 +259,59 @@ wire_mcp() {
   return 0
 }
 
+# ---------------------------------------------------------------------------
+# wire_mesh — Agent Mesh + Merkle audit + shadow discovery (F5 · T5.x)
+# Kurulum: .agt/manifest.yaml (template'ten) + audit-chain.json başlat
+# Doğrulama: shadow-discovery (strict) + audit-chain verify + dashboard üretimi
+# Fail-closed: manifest yoksa shadow taraması uyarır (bilinmeyen ajan güvenilmez)
+# ---------------------------------------------------------------------------
+wire_mesh() {
+  info "Agent Mesh + Merkle audit (F5)"
+  MESH_OK=0
+
+  # 1) .agt/manifest.yaml üret (template'ten, varsa koru)
+  if [[ ! -f .agt/manifest.yaml && -f .agt/manifest.yaml.template ]]; then
+    cp .agt/manifest.yaml.template .agt/manifest.yaml
+    ok ".agt/manifest.yaml üretildi (template'ten)"
+  fi
+
+  # 2) Shadow discovery (bilgi amaçlı — strict değil; CI strict zorlar)
+  if [[ -f .agt/manifest.yaml ]] && command -v python3 >/dev/null 2>&1; then
+    if uv run --with pyyaml python3 .archcore/bin/shadow-discovery.py >/dev/null 2>&1; then
+      ok "shadow discovery: kayıtsız ajan yok"
+      MESH_OK=1
+    else
+      warn "shadow discovery uyarı verdi — ajan tanım dosyaları manifest ile eşleşmiyor (CI strict zorlar)"
+    fi
+  else
+    warn "manifest/python yok — shadow taraması atlandı (CI agent-mesh.yml zorlar)"
+  fi
+
+  # 3) Merkle audit zinciri başlat (yoksa genesis)
+  if [[ ! -f .archcore/audit-chain.json ]]; then
+    if python3 .archcore/bin/audit-chain.py --add "kurulum: setup.sh wire_mesh" >/dev/null 2>&1; then
+      ok "Merkle audit zinciri başlatıldı (genesis + kurulum kaydı)"
+    else
+      warn "audit-chain.py çalıştırılamadı"
+    fi
+  else
+    if python3 .archcore/bin/audit-chain.py --verify >/dev/null 2>&1; then
+      ok "Merkle zinciri doğru (tamper yok)"
+    else
+      fail "Merkle zinciri BOZUK — audit-chain.json kURcalanmış"; fail_count=$((fail_count + 1))
+    fi
+  fi
+
+  # 4) Governance dashboard (denetim izi, R11-11)
+  if uv run --with pyyaml python3 .archcore/bin/gov-dashboard.py >/dev/null 2>&1; then
+    ok "governance dashboard üretildi (docs/governance-dashboard.html)"
+  else
+    warn "dashboard üretilemedi (pyyaml gerekebilir)"
+  fi
+
+  return 0
+}
+
 # --- ön koşul kontrolü ---
 step "ÖN KOŞULLAR"
 for tool in git npm node; do
@@ -397,6 +450,13 @@ if wire_mcp; then
   ok "MCP gateway + supply chain doğrulama tamam"
 else
   fail "MCP gateway kurulum başarısız"; fail_count=$((fail_count + 1))
+fi
+
+info "Agent Mesh + Merkle audit (F5)"
+if wire_mesh; then
+  ok "Agent mesh + audit tamam"
+else
+  fail "Agent mesh kurulum başarısız"; fail_count=$((fail_count + 1))
 fi
 
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then

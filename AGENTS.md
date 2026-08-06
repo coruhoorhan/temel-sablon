@@ -34,6 +34,13 @@
 - **Kapı:** `npm run arch:check` (= steiger + knip) — pre-commit + CI'da
 - **Script:** `tools/architecture/scripts/check-arch.sh`
 
+## Agent Mesh (F5)
+- **Manifest + trust mesh:** `.agt/manifest.yaml` — DID kimlikleri, trust_score, delegation, trust decay, peer attestation
+- **Merkle audit:** `.archcore/bin/audit-chain.py` — karar kayıtlarını SHA-256 zincirler (tamper-evident)
+- **Shadow AI:** `.archcore/bin/shadow-discovery.py` — manifest'te kayıtlı olmayan ajan tespiti (strict = red)
+- **Dashboard:** `.archcore/bin/gov-dashboard.py` → `docs/governance-dashboard.html` (R11-11 denetim izi)
+- **CI:** `.github/workflows/agent-mesh.yml` — zincir doğrulama + shadow + trust şeması
+
 ## Kurallar (KATMAN 1 — bilgi)
 - **11 kural kategorisi:** `.archcore/rules/01-tipler.rule.md` … `11-hafiza.rule.md`
 - Her kural ya makine kapısına (ESLint kural ID / tsc flag / vitest eşiği) ya verifier kontrol listesine bağlıdır.

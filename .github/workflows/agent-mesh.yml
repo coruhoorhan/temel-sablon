@@ -1,0 +1,75 @@
+# agent-mesh.yml — Agent Mesh CI Kapısı (F5 · T5.2/T5.3)
+# Rol: Merkle audit zinciri doğrulama + Shadow AI discovery + trust mesh health.
+# Zorlar: zincir tamper'ı = red · shadow ajan (strict) = red · manifest eksik = red.
+
+name: agent-mesh
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mesh-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  agent-mesh:
+    name: Merkle audit + shadow discovery + trust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python + uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # 1) Merkle audit — zinciri doğrula (tamper varsa red)
+      - name: Merkle audit chain verify
+        run: |
+          if [ -f .archcore/audit-chain.json ]; then
+            uv run --with pyyaml python3 .archcore/bin/audit-chain.py --verify \
+              || { echo "::error:: Merkle zinciri BOZUK — tamper tespit edildi"; exit 1; }
+          else
+            echo "::warning:: audit-chain.json yok — ilk kayıt CI'da eklenecek (R11-11)"
+          fi
+
+      # 2) Shadow AI discovery — manifest'te kayıtlı olmayan ajanlar
+      - name: Shadow AI discovery (strict)
+        run: |
+          test -f .agt/manifest.yaml || { echo "::error:: .agt/manifest.yaml eksik — manifest template'ten üretilmedi"; exit 1; }
+          uv run --with pyyaml python3 .archcore/bin/shadow-discovery.py --strict \
+            || { echo "::error:: shadow ajan bulundu — manifest'e kaydet veya kaldır"; exit 1; }
+
+      # 3) Trust mesh health — manifest şeması + trust değerleri
+      - name: Trust mesh şema kontrolü
+        run: |
+          uv run --with pyyaml python3 - <<'PY'
+          import yaml
+          m = yaml.safe_load(open(".agt/manifest.yaml"))
+          assert "trust_mesh" in m, "trust_mesh bölümü eksik (F5)"
+          assert m["trust_mesh"].get("enabled") is True, "trust_mesh kapalı"
+          for a in m["agents"]:
+              ts = a.get("trust_score", 0)
+              assert 0 <= ts <= 1, f"{a['id']} trust_score aralık dışı: {ts}"
+          assert m.get("defaults", {}).get("trust_score") == 0.0, "fail-closed: bilinmeyen ajan trust 0 olmalı"
+          print("✓ trust mesh sağlıklı (fail-closed default doğrulandı)")
+          PY
+
+      # 4) Artifact: audit raporu (denetim izi)
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: merkle-audit-report
+          path: .archcore/audit-chain.json
+          if-no-files-found: warn

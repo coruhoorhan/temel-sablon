@@ -64,3 +64,32 @@ audit:
   chain_enabled: true
   tamper_evidence: "sha256"
   log_every_decision: true
+
+# --- Trust Mesh (F5 · T5.1) ---
+# Ajanlar arası güvenin zamanla ve eylemle nasıl değiştiğini tanımlar.
+trust_mesh:
+  enabled: true
+  # trust_decay: gün cinsinden — bu sürede ajan hiçbir onaylı eylem
+  # yapmazsa trust_score düşmeye başlar (bayat kimlik = düşük güven).
+  trust_decay_days: 30
+  # min_trust_for_action: bu eşiğin altındaki ajan YALNIZCA okuma yapabilir
+  # (policy.yaml deny-low-trust-delegate ile çift katman).
+  min_trust_for_action: 0.5
+  # peer_attestation: bir ajanın diğerini onaylaması trust'ı yükseltir
+  # (yalnız daha yüksek trust'lı ajan attest edebilir — güven yukarı akar).
+  peer_attestation:
+    enabled: true
+    require_higher_trust: true
+
+# --- Shadow AI Discovery (F5 · T5.3) ---
+# Kayıtlı olmayan ajanları tespit etme — manifest'te görünmeyen her ajan
+# fail-closed (trust 0.0) ve raporlanır.
+shadow_discovery:
+  enabled: true
+  # Bu klasörlerdeki ajan tanımları manifest ile karşılaştırılır.
+  scan_paths:
+    - ".opencode/agents/"
+    - ".claude/agents/"
+    - ".github/workflows/"
+  # actions: report | block — 'report' bilgi amaçlı, 'block' yapısal engel.
+  actions: "report"
