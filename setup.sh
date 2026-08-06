@@ -35,9 +35,12 @@ wire_midas() {
   if ! have midas; then
     info "midas bulunamadı — kurulum deneniyor..."
     if have uv; then
-      info "uv ile kuruluyor: uv tool install midas-memory[mcp,local]"
-      if "$(use uv)" tool install "midas-memory[mcp,local]" >/dev/null 2>&1; then
-        ok "midas kuruldu (uv)"; MIDAS_OK=1
+      # KRİTİK: --with "mcp<2" ZORUNLU — mcp SDK 2.0 FastMCP'yi kaldırdı
+      # (mcp.server.fastmcp), Midas 1.0.0 bunu ister. 2.0 kurulursa
+      # midas-mcp "Connection closed (-32000)" ile çöker.
+      info "uv ile kuruluyor: midas-memory[mcp,local] (mcp<2 sabit)"
+      if "$(use uv)" tool install "midas-memory[mcp,local]" --with "mcp<2" >/dev/null 2>&1; then
+        ok "midas kuruldu (uv, mcp<2)"; MIDAS_OK=1
       else
         warn "uv tool install başarısız — pip/pipx fallback deneniyor"
         if have pipx; then
@@ -59,6 +62,10 @@ wire_midas() {
   else
     MIDAS_OK=1
     ok "midas zaten kurulu: $(midas version 2>/dev/null || midas --help 2>/dev/null | head -n1)"
+    # Kurulu sürümde FastMCP var mı? (mcp<2 sağlaması)
+    if midas-mcp 2>&1 | grep -q "MCP SDK"; then
+      warn "midas-mcp MCP SDK hatası veriyor — 'uv tool install midas-memory[mcp,local] --with mcp<2 --force' çalıştır"
+    fi
   fi
 
   if [[ "$MIDAS_OK" -eq 0 ]]; then
