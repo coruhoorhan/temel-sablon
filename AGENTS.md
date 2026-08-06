@@ -28,6 +28,12 @@
 - **Supply chain:** lockfile SHA-256 manifest (`.archcore/supply-chain-manifest.txt`) + OSV.dev CVE sorgusu
 - **CI:** `.github/workflows/mcpscan.yml` + `supply-chain.yml` (high+ bulgu = red)
 
+## Mimari (F4)
+- **Custom Steiger plugin:** `tools/architecture/src/steiger-rules/` — `temel/no-upward-import` (shared→entities→features→widgets→pages→app; yukarı import yasak)
+- **Config:** `steiger.config.js` — fsd.configs.recommended + custom plugin + ignores
+- **Kapı:** `npm run arch:check` (= steiger + knip) — pre-commit + CI'da
+- **Script:** `tools/architecture/scripts/check-arch.sh`
+
 ## Kurallar (KATMAN 1 — bilgi)
 - **11 kural kategorisi:** `.archcore/rules/01-tipler.rule.md` … `11-hafiza.rule.md`
 - Her kural ya makine kapısına (ESLint kural ID / tsc flag / vitest eşiği) ya verifier kontrol listesine bağlıdır.
