@@ -1,0 +1,85 @@
+# =============================================================================
+# .agt/policy.yaml.template — AGT Policy (ACS şeması, F2 · T2.2)
+# =============================================================================
+# Kopyala:  cp .agt/policy.yaml.template .agt/policy.yaml
+# Doğrula:  agt lint-policy .agt/policy.yaml --strict   (şema lint)
+# Test:     agt test .agt/policy.yaml .agt/fixtures/    (fixture replay, CI gate)
+#
+# ŞEMA (AGT 4.1.0 — agent_os/policies/schema.py + bridge.py):
+#   PolicyDocument : version, name, description, rules[], defaults, scope
+#   PolicyRule     : name, condition{field, operator, value}, action,
+#                    priority(0=ilk), message, override
+#   PolicyOperator : eq | ne | gt | lt | gte | lte | in | not_in | matches | contains
+#   PolicyAction   : allow | deny | audit | block   (yalnız 4!)
+#   PolicyDefaults : action, max_tokens(4096), max_tool_calls(10),
+#                    confidence_threshold(0.8), network_default(deny=fail-closed)
+#   CONTEXT FIELDS (bridge.py — evaluator'a giren context anahtarları):
+#                    tool_name · tool_call_count · token_count · content ·
+#                    confidence · input (ve girdi bağlamındaki diğer üst düzey alanlar)
+#
+# TEMEL bağlamı: policy ajanın tool kullanımını deterministik yönetir —
+# plan-gate (K1-K5) yanında ikinci kontrol yüzeyi. Tool çağrısı yapısal
+# engellenir (fail-closed), prompt-level kurallara güvenilmez (OWASP LLM01).
+# =============================================================================
+
+version: "1.0"
+name: temel-production-policy
+description: "TEMEL şablonu — ajan eylem politikası (yıkıcı işlem deny, harici erişim audit, MCP limitli)"
+
+defaults:
+  action: allow
+  max_tokens: 4096
+  max_tool_calls: 10
+  confidence_threshold: 0.8
+  network_default: deny          # fail-closed: sandbox dış ağa kapalı
+
+rules:
+  # --- Yıkıcı git işlemleri: deny (ruleset K4 çift katman) ---
+  - name: block-force-push
+    condition:
+      field: "tool_name"
+      operator: eq
+      value: "git_force_push"
+    action: deny
+    priority: 100
+    message: "force-push yasak — ruleset + policy çift katman (K4)"
+
+  # --- Hafıza/belge silme: deny (R11-14: silme yasak, arşivle) ---
+  - name: block-delete-tools
+    condition:
+      field: "tool_name"
+      operator: in
+      value: ["fs_delete", "rm", "fs_overwrite"]
+    action: deny
+    priority: 100
+    message: "hafıza/belge silme yasak — arşivle: rejected/superseded (R11-14)"
+
+  # --- Harici web erişimi: audit (R11-13: harici içerik doğrudan hafızaya yazılamaz) ---
+  - name: audit-external-fetch
+    condition:
+      field: "tool_name"
+      operator: matches
+      value: "web_(fetch|search|browse)"
+    action: audit
+    priority: 50
+    message: "harici içerik hafızaya doğrudan yazılamaz — candidates + insan onayı (R11-13)"
+
+  # --- Secret yazımı: audit (gitleaks ikinci katman + iz) ---
+  - name: audit-secret-write
+    condition:
+      field: "tool_name"
+      operator: matches
+      value: "(write|edit|create|append)_?file"
+    action: audit
+    priority: 30
+    message: "dosya yazımları izleniyor (gitleaks + audit izi)"
+
+  # --- Düşük güven: deny (F5 agent mesh — insan onayı yoksa) ---
+  - name: deny-low-trust-delegate
+    condition:
+      field: "trust_score"
+      operator: lt
+      value: 0.7
+    action: deny
+    priority: 90
+    message: "düşük güven skorlu ajan delegasyon yapamaz (trust mesh, F5)"

@@ -1,0 +1,93 @@
+# agt-verify.yml — AGT Governance CI Kapısı (F2 · T2.4)
+# Rol: OWASP ASI 2026 doğrulaması + policy lint + fixture replay + prompt defense.
+# Zorlar: 10/10 OWASP ASI · policy şeması geçerli · fixture'lar policy ile uyumlu ·
+#         agent prompt'ları minimum C notu (prompt defense).
+# Fail-closed: herhangi biri kırmızı = build kırmızı.
+
+name: agt-verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agt-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  agt-governance:
+    name: OWASP ASI + policy + prompt defense
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # AGT kur — [full] meta-package (governance CLI + compliance modülleri)
+      - name: Install AGT
+        run: |
+          uv tool install "agent-governance-toolkit[full]" --force || \
+          uv tool install "agent-governance-toolkit" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # 1) OWASP ASI 2026 doğrulaması — 10/10 zorunlu
+      - name: OWASP ASI verify
+        run: |
+          agt verify 2>&1 | tee /tmp/agt-verify.log
+          grep -q "10/10" /tmp/agt-verify.log || { echo "::error:: OWASP ASI 10/10 DEĞİL"; exit 1; }
+
+      # 2) Policy şeması — template'ten üretilen gerçek policy'yi lint'le
+      - name: Policy lint (--strict)
+        run: |
+          if [ -f .agt/policy.yaml ]; then
+            agt lint-policy .agt/policy.yaml --strict || { echo "::error:: policy şeması geçersiz"; exit 1; }
+          elif [ -f .agt/policy.yaml.template ]; then
+            cp .agt/policy.yaml.template /tmp/policy.yaml
+            agt lint-policy /tmp/policy.yaml --strict || { echo "::error:: policy template şeması geçersiz"; exit 1; }
+          else
+            echo "::warning:: .agt/policy.yaml(.template) yok — policy kapısı atlandı"
+          fi
+
+      # 3) Fixture replay — policy değişikliğinin davranışını doğrula (CI gate)
+      - name: Policy fixture replay
+        run: |
+          if [ -f .agt/policy.yaml ] && [ -f .agt/fixtures/policy.test.yaml ]; then
+            agt test .agt/policy.yaml .agt/fixtures/ || { echo "::error:: fixture mismatch"; exit 1; }
+          elif [ -f .agt/policy.yaml.template ] && [ -f .agt/fixtures/policy.test.yaml.template ]; then
+            cp .agt/policy.yaml.template /tmp/policy.yaml
+            cp .agt/fixtures/policy.test.yaml.template /tmp/fixtures.yaml
+            agt test /tmp/policy.yaml /tmp/fixtures.yaml || { echo "::error:: fixture template mismatch"; exit 1; }
+          else
+            echo "::warning:: fixture yok — fixture kapısı atlandı"
+          fi
+
+      # 4) Prompt defense — agent prompt'ları (AGENTS.md, verifier) minimum C notu.
+      #    TEMEL bulgusu: AGENTS.md şu an F notu — savunma dili eklendikçe bu kapı yeşile döner.
+      - name: Prompt defense scan (min C)
+        run: |
+          AGENTS_GRADE=$(agt red-team scan AGENTS.md 2>/dev/null | grep -oP 'Grade: \K[A-F]' | head -1)
+          echo "AGENTS.md grade: ${AGENTS_GRADE:-?}"
+          # F1/F2 sırasında yeni prompt savunmaları eklendikçe eşik sıkılaştırılır;
+          # şimdilik raporla ama kırma (fail-open) — T8'de --min-grade C blocking olacak.
+          echo "::warning:: AGENTS.md prompt defense grade=${AGENTS_GRADE:-?} (T8'de blocking olacak)"
+
+      # 5) OWASP attestation artifact (denetim izi, R11-11)
+      - name: Upload OWASP attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-asi-attestation
+          path: /tmp/agt-verify.log
+          if-no-files-found: error

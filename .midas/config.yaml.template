@@ -1,0 +1,80 @@
+# =============================================================================
+# .midas/config.yaml.template — Midas Hafıza Sistemi Yapılandırması
+# =============================================================================
+# Kopyala:  cp .midas/config.yaml.template .midas/config.yaml
+# Referans: midas-policy.md (hafıza yazma kuralları) · 11-hafiza.rule.md (R11)
+# Ortam değişkenleri MCP server'a aktarılır — setup.sh wire_midas() bunu yapar.
+#
+# DİKKAT — NLI zorunludur:
+#   MIDAS_MCP_NLI=1 OLMADAN provenance guard çalışmaz: düşük provenance
+#   (observation) bir user_confirmation kaydını EZEBİLİR (R11-01/02 ihlali).
+#   MIDAS_MCP_SUPERSEDE=1 ile birlikte zorunludur. İlk kullanımda NLI modeli
+#   indirilir (tek seferlik). İnternet yoksa guard devre dışı kalır ve
+#   pre-push kapısı uyarır — fail-open değil fail-closed olmalı (setup.sh).
+# =============================================================================
+
+# --- Store ---
+# Tek shared store: tüm MCP client'lar (Claude, Codex, Cursor, VS Code, ...)
+# aynı SQLite dosyasına bağlanır — ortak yaşayan hafıza.
+MIDAS_MCP_DB: "${MIDAS_MCP_DB:-~/.midas/memory.sqlite3}"
+
+# --- Scope ---
+# auto: her proje (git repo) kendi namespace'inde çalışır — projeler arası
+# hafıza karışmaz. shared: tüm client'lar tek namespace paylaşır (tekil proje).
+MIDAS_MCP_NAMESPACE: "${MIDAS_MCP_NAMESPACE:-auto}"
+
+# --- Embedder ---
+# local:  fastembed (kaliteli semantik, tek seferlik model indirme)
+# hashing: sıfır indirme, lexical eşleşme (çevrimdışı minimal)
+# NOT: recall kalitesi embedder'a bağlı — 'local' önerilir (midas doctor uyarır).
+MIDAS_MCP_EMBEDDER: "${MIDAS_MCP_EMBEDDER:-local}"
+
+# --- Önem / eşikler ---
+# min_importance: daha düşük önem puanlı kayıtlar capture'da atlanır (LLM-siz
+#   skorlama). Filler/önemsiz konuşma bu eşiğin altında kalır (R11: dedup).
+MIDAS_MCP_MIN_IMPORTANCE: "${MIDAS_MCP_MIN_IMPORTANCE:-2}"
+# max_records: belleği sınırlı tutar; aşınca düşük değerli kuyruk unutulur.
+MIDAS_MCP_MAX_RECORDS: "${MIDAS_MCP_MAX_RECORDS:-20000}"
+
+# --- Governed revision (R11-05/10) ---
+# supersede: çelişen yeni kayıt eskiyi işaretler (çift yönlü: eski -> superseded_by,
+#   yeni -> supersedes). OLMAZSA çelişkiler yığılır, state ikiye bölünür.
+MIDAS_MCP_SUPERSEDE: "${MIDAS_MCP_SUPERSEDE:-1}"
+# NLI: çelişki tespitini dil modeliyle doğrular (zORUNLU — guard bunu kullanır).
+MIDAS_MCP_NLI: "${MIDAS_MCP_NLI:-1}"
+# auto_maintain: boşta kaldığında TTL + dedup + forget_decayed otomatik çalışır.
+MIDAS_MCP_AUTO_MAINTAIN: "${MIDAS_MCP_AUTO_MAINTAIN:-60}"
+
+# --- TTL (R11-06) — tür başına gün ---
+# chat:   kısa ömürlü sohbet gerçekleri (30 gün)
+# note:   notlar (90 gün)
+# fact:   gerçekler (180 gün)
+# constraint/decision: mimari kararlar (365 gün) — R11-A2'ye göre ayarlanır
+# AŞILAN kayıt recall'da "bayat" işaretlenir; forget_decayed düşük değerliyi siler.
+MIDAS_MCP_TTL: "${MIDAS_MCP_TTL:-chat=30,note=90,fact=180,constraint=365,decision=365,preference=180,correction=90}"
+
+# --- Provenance guard (R11-01/02/13) ---
+# external_or_destructive_actions_require_check_memory_use: ajan destructive
+#   veya dış etki gerektiren bir eylemi memory'ye dayandırıyorsa, bu aracı
+#   çağırmak zorundadır; user_confirmation provenance'ı olmayan hafıza eylemi
+#   yetkilendiremez (superseded kayıt da yetkilendiremez).
+MIDAS_MCP_POLICY_REQUIRE_CHECK: "${MIDAS_MCP_POLICY_REQUIRE_CHECK:-1}"
+
+# --- Sabitleme ---
+# pinned: kalıcı talimatlar (örn. mimari kararlar) asla unutulmaz.
+MIDAS_MCP_PINNED: "${MIDAS_MCP_PINNED:-}"
+
+# --- Güvenlik ---
+# token: HTTP serve modunda bearer auth (midas serve --http --token <secret>)
+# key:   SQLCipher şifreleme (pip install "midas-memory[encrypted]") — fail-closed:
+#        yanlış key = okuma reddi, düz metne düşmez.
+# NOT: ikisi de .env veya shell env'den gelir, config'e düz yazma (gitleaks).
+MIDAS_MCP_TOKEN: "${MIDAS_MCP_TOKEN:-}"
+MIDAS_MCP_KEY: "${MIDAS_MCP_KEY:-}"
+
+# --- Doğrulama ---
+# Bu dosya .midas/config.yaml.template olarak şablonda durur; kurulumda
+# .midas/config.yaml'e kopyalanır ve setup.sh şu kontrolleri yapar:
+#   midas doctor            → store + embedder + client wiring durumu
+#   midas status --json     → makine-okur wiring receipt (CI'da kullanılır)
+#   midas audit             → hash-chain bütünlüğü (tamper-evident)

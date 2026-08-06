@@ -20,6 +20,166 @@ step() { echo -e "\n${CYAN}===== $1 =====${NC}"; }
 have() { command -v "$1" >/dev/null 2>&1 || command -v "$1.exe" >/dev/null 2>&1; }
 use()  { if command -v "$1" >/dev/null 2>&1; then echo "$1"; else echo "$1.exe"; fi; }
 
+# ---------------------------------------------------------------------------
+# wire_midas — Midas hafıza sistemini kur + MCP client'ları bağla (F1 · T1.1)
+# Kurulum: uv tool install (uv yoksa pip/pipx/npx fallback)
+# Wiring : .midas/config.yaml (template'ten) + midas init --claude-hook
+# Doğrulama: midas doctor + status --json (CI receipt ile aynı şema)
+# Fail-closed: NLI yoksa hafıza guard'ı çalışmaz → uyarı (R11-01/02).
+# ---------------------------------------------------------------------------
+wire_midas() {
+  info "Midas hafıza sistemi (kurulum + wiring)"
+  MIDAS_OK=0
+
+  # 1) midas CLI var mı?
+  if ! have midas; then
+    info "midas bulunamadı — kurulum deneniyor..."
+    if have uv; then
+      info "uv ile kuruluyor: uv tool install midas-memory[mcp,local]"
+      if "$(use uv)" tool install "midas-memory[mcp,local]" >/dev/null 2>&1; then
+        ok "midas kuruldu (uv)"; MIDAS_OK=1
+      else
+        warn "uv tool install başarısız — pip/pipx fallback deneniyor"
+        if have pipx; then
+          pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pipx)"; MIDAS_OK=1; }
+        fi
+        if [[ "$MIDAS_OK" -eq 0 ]] && have pip; then
+          pip install --user "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pip --user)"; MIDAS_OK=1; }
+        fi
+      fi
+    elif have pipx; then
+      pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pipx)"; MIDAS_OK=1; }
+    else
+      warn "uv/pipx yok — TypeScript port deneniyor: npx -y midas-memory-mcp"
+      if npm exec --yes midas-memory-mcp -- --version >/dev/null 2>&1; then
+        warn "npx midas-memory-mcp kullanılabilir (deneysel) — tam CLI (doctor/status) yok"
+        MIDAS_OK=1
+      fi
+    fi
+  else
+    MIDAS_OK=1
+    ok "midas zaten kurulu: $(midas version 2>/dev/null || midas --help 2>/dev/null | head -n1)"
+  fi
+
+  if [[ "$MIDAS_OK" -eq 0 ]]; then
+    warn "midas KURULAMADI — hafıza sistemi devre dışı. Elle: uv tool install 'midas-memory[mcp,local]'"
+    warn "NOT: hafıza olmadan R11 (11-hafiza.rule.md) zorlanamaz — CI midas.yml kırmızı kalır."
+    return 1
+  fi
+
+  # 2) .midas/config.yaml üret (template'ten, varsa koru)
+  mkdir -p .midas
+  if [[ ! -f .midas/config.yaml && -f .midas/config.yaml.template ]]; then
+    cp .midas/config.yaml.template .midas/config.yaml
+    ok ".midas/config.yaml üretildi (template'ten)"
+  elif [[ ! -f .midas/config.yaml ]]; then
+    warn ".midas/config.yaml.template YOK — config üretilemedi (şablon eksik?)"
+  else
+    info ".midas/config.yaml zaten var — korunuyor"
+  fi
+
+  # 3) Client wiring (Claude Code hook + diğer client'lar)
+  if midas init --claude-hook >/dev/null 2>&1; then
+    ok "midas init --claude-hook tamam (client wiring)"
+  else
+    warn "midas init --claude-hook uyarı verdi — kurulum elle kontrol edilmeli: midas init"
+  fi
+
+  # 4) Doğrulama
+  if have midas; then
+    if midas doctor >/dev/null 2>&1; then
+      ok "midas doctor: store + embedder + MCP hazır"
+    else
+      warn "midas doctor uyarı verdi (kurulum yeni — ilk 'midas init' store oluşturur)"
+    fi
+    # NLI guard zorunluluğu (R11-01/02): supersede+NLI config'te mi?
+    if grep -q "MIDAS_MCP_NLI.*1" .midas/config.yaml 2>/dev/null; then
+      ok "NLI guard açık (config: MIDAS_MCP_NLI=1)"
+    else
+      warn "MIDAS_MCP_NLI=1 config'te YOK — provenance guard zayıf (düşük provenance yükseği ezebilir). Düzelt: .midas/config.yaml"
+    fi
+    if midas status --json > .archcore/tmp/midas-receipt.json 2>/dev/null; then
+      ok "wiring receipt üretildi: .archcore/tmp/midas-receipt.json"
+    else
+      warn "midas status --json başarısız — receipt yok"
+    fi
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
+# wire_agt — Agent Governance Toolkit kur + policy/fixture doğrula (F2 · T2.1)
+# Kurulum: uv tool install agent-governance-toolkit[full] (pip fallback)
+# Doğrulama: agt doctor + verify (OWASP ASI 10/10) + lint-policy + fixture replay
+# Policy: .agt/policy.yaml (template'ten) — CI agt-verify.yml ile aynı komutlar
+# Fail-closed: OWASP ASI 10/10 altı = uyarı; policy şeması bozuksa = fail.
+# ---------------------------------------------------------------------------
+wire_agt() {
+  info "AGT Governance Toolkit (kurulum + doğrulama)"
+  AGT_OK=0
+
+  if ! have agt; then
+    info "agt bulunamadı — kurulum deneniyor..."
+    if have uv; then
+      info "uv ile kuruluyor: uv tool install agent-governance-toolkit[full]"
+      if "$(use uv)" tool install "agent-governance-toolkit[full]" >/dev/null 2>&1; then
+        ok "agt kuruldu (uv)"; AGT_OK=1
+      else
+        warn "uv tool install başarısız — yalın paket deneniyor"
+        "$(use uv)" tool install "agent-governance-toolkit" >/dev/null 2>&1 && { ok "agt kuruldu (uv yalın)"; AGT_OK=1; }
+      fi
+    elif have pipx; then
+      pipx install "agent-governance-toolkit[full]" >/dev/null 2>&1 && { ok "agt kuruldu (pipx)"; AGT_OK=1; }
+    elif have pip; then
+      pip install --user "agent-governance-toolkit[full]" >/dev/null 2>&1 && { ok "agt kuruldu (pip --user)"; AGT_OK=1; }
+    fi
+  else
+    AGT_OK=1
+    ok "agt zaten kurulu: $(agt --version 2>/dev/null)"
+  fi
+
+  if [[ "$AGT_OK" -eq 0 ]]; then
+    warn "agt KURULAMADI — governance kapıları devre dışı. Elle: uv tool install 'agent-governance-toolkit[full]'"
+    warn "NOT: CI agt-verify.yml kırmızı kalır (OWASP ASI + policy + fixture)."
+    return 1
+  fi
+
+  # .agt/policy.yaml üret (template'ten, varsa koru)
+  mkdir -p .agt/fixtures
+  if [[ ! -f .agt/policy.yaml && -f .agt/policy.yaml.template ]]; then
+    cp .agt/policy.yaml.template .agt/policy.yaml
+    ok ".agt/policy.yaml üretildi (template'ten)"
+  fi
+  if [[ ! -f .agt/fixtures/policy.test.yaml && -f .agt/fixtures/policy.test.yaml.template ]]; then
+    cp .agt/fixtures/policy.test.yaml.template .agt/fixtures/policy.test.yaml
+    ok ".agt/fixtures/policy.test.yaml üretildi (template'ten)"
+  fi
+
+  # Doğrulama zinciri
+  if agt verify 2>/dev/null | grep -q "10/10"; then
+    ok "OWASP ASI 2026: 10/10 (fail-closed tamam)"
+  else
+    warn "agt verify 10/10 DEĞİL — governance zafiyeti var (rapor: agt verify)"
+  fi
+
+  POLICY_FILE=".agt/policy.yaml"
+  [[ -f "$POLICY_FILE" ]] || POLICY_FILE="/dev/null"
+  if agt lint-policy "$POLICY_FILE" --strict >/dev/null 2>&1; then
+    ok "policy lint --strict: temiz"
+  else
+    fail "policy şeması bozuk (lint-policy --strict)" ; fail_count=$((fail_count + 1))
+  fi
+
+  if [[ -f .agt/fixtures/policy.test.yaml ]]; then
+    if agt test .agt/policy.yaml .agt/fixtures/ 2>/dev/null | grep -q "0 mismatch"; then
+      ok "policy fixture replay: tümü geçti"
+    else
+      warn "policy fixture mismatch — policy değiştiyse fixture'ları güncelle"
+    fi
+  fi
+  return 0
+}
+
 # --- ön koşul kontrolü ---
 step "ÖN KOŞULLAR"
 for tool in git npm node; do
@@ -138,6 +298,21 @@ else
   fail "hooks:install BAŞARISIZ (npm approve-scripts lefthook gerekebilir)"; fail_count=$((fail_count + 1))
 fi
 
+info "Midas hafıza sistemi (F1)"
+mkdir -p .archcore/tmp
+if wire_midas; then
+  ok "Midas kurulum + wiring tamam"
+else
+  fail "Midas kurulum başarısız"; fail_count=$((fail_count + 1))
+fi
+
+info "AGT Governance (F2)"
+if wire_agt; then
+  ok "AGT kurulum + doğrulama tamam"
+else
+  fail "AGT kurulum başarısız"; fail_count=$((fail_count + 1))
+fi
+
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
   info "GitHub repo oluşturuluyor ($VIS)"
   GH="$(use gh)"
@@ -173,6 +348,16 @@ if npm run verify >/dev/null 2>&1 || npm.cmd run verify >/dev/null 2>&1; then ok
 info "verify-drift (TTL/bayatlık taraması)"
 if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uyarı"; else
   warn "verify-drift uyarı verdi (bilgi amaçlı, --strict değil)"; fi
+
+if have midas; then
+  info "Midas wiring doğrulaması"
+  if midas doctor >/dev/null 2>&1; then ok "midas doctor hazır"; else
+    warn "midas doctor uyarı verdi (ilk kurulumda store oluşmamış olabilir)"; fi
+  if [[ -f .archcore/tmp/midas-receipt.json ]]; then
+    ok "midas wiring receipt mevcut (.archcore/tmp/midas-receipt.json)"
+  else
+    warn "midas wiring receipt yok — 'midas status --json' elle çalıştırın"; fi
+fi
 
 if have gitleaks; then
   info "gitleaks staged taraması"

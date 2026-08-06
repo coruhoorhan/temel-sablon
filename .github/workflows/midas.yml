@@ -1,0 +1,97 @@
+# midas.yml — Midas Hafıza Sistemi CI Kapısı (F1 · T1.5)
+# Rol: SALT-OKUNUR AUDITOR (R11-12) — wiring receipt üretir, hafızaya yazmaz.
+# Zorlar: midas kurulu mu · store açılıyor mu · embedder uygun mu ·
+#         client wiring tamam mı · TTL/NLI config yerinde mi.
+# Fail-closed: eksik/hatalı wiring = kırmızı build (hafıza sessizce bozulmaz).
+
+name: midas
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: midas-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  midas-audit:
+    name: midas doctor + wiring receipt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # uv kur (hızlı, tek satır) — Midas Python paketini yönetir
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Midas'ı CI'da kur — sürüm pin (choreom: üretimde proxy aynasında kur)
+      - name: Install Midas
+        run: |
+          uv tool install "midas-memory[mcp,local]" --force || \
+          uv tool install "midas-memory" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Şablon config'i doğrula: .midas/config.yaml.template env'leri
+      # ve midas-policy.md (R11 sözleşmesi) commit'te olmalı
+      - name: Şablon varlık kontrolü
+        run: |
+          test -f .midas/config.yaml.template || { echo "::error:: .midas/config.yaml.template eksik"; exit 1; }
+          test -f midas-policy.md || { echo "::error:: midas-policy.md eksik"; exit 1; }
+          test -f .archcore/rules/11-hafiza.rule.md || { echo "::error:: 11-hafiza.rule.md eksik"; exit 1; }
+          echo "✓ hafıza şablonları yerinde"
+
+      # doctor: store/embedder/MCP durumu — uyarı varsa uyar, hata varsa fail
+      - name: midas doctor
+        run: |
+          midas doctor 2>&1 || { echo "::error:: midas doctor başarısız"; exit 1; }
+
+      # Wiring receipt: makine-okur JSON — hangi client wire edildi, hangisi atlandı.
+      # CI ortamında gerçek client'lar yoktur (temiz runner) — yapı/şema doğrulanır.
+      - name: midas status --json (schema doğrulama)
+        run: |
+          midas status --json > /tmp/midas-receipt.json
+          python3 - <<'PY'
+          import json
+          r = json.load(open("/tmp/midas-receipt.json"))
+          required = ["midas_version", "memory_db", "embedder", "policy", "clients"]
+          missing = [k for k in required if k not in r]
+          if missing:
+              print(f"::error:: receipt şeması eksik: {missing}")
+              raise SystemExit(1)
+          pol = r.get("policy", {})
+          print(f"✓ receipt şeması OK (v{r.get('midas_version','?')})")
+          print(f"  policy: recall_first={pol.get('recall_first')}, "
+                f"min_importance={pol.get('min_importance')}, "
+                f"guard={pol.get('external_or_destructive_actions_require_check_memory_use')}")
+          print(f"  clients detected: {sum(1 for c in r['clients'] if c.get('detected'))}")
+          PY
+
+      # NLI/supersede config zorunluluğu (guard olmadan düşük provenance yükseği
+      # ezer — R11-01/02). Şablon doğrulanır, gerçek env CI'da değildir.
+      - name: NLI/supersede config kontrolü
+        run: |
+          grep -q "MIDAS_MCP_NLI" .midas/config.yaml.template || { echo "::error:: NLI env eksik"; exit 1; }
+          grep -q "MIDAS_MCP_SUPERSEDE" .midas/config.yaml.template || { echo "::error:: SUPERSEDE env eksik"; exit 1; }
+          grep -q "MIDAS_MCP_TTL" .midas/config.yaml.template || { echo "::error:: TTL env eksik"; exit 1; }
+          echo "✓ NLI/supersede/TTL config yerinde"
+
+      # Artifact: wiring receipt (denetim izi, R11-11)
+      - name: Upload wiring receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: midas-wiring-receipt
+          path: /tmp/midas-receipt.json
+          if-no-files-found: error

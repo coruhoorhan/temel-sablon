@@ -1,0 +1,57 @@
+# =============================================================================
+# .agt/fixtures/policy.test.yaml.template — AGT Policy Fixtures (F2 · T2.2)
+# =============================================================================
+# Kopyala:  cp .agt/fixtures/policy.test.yaml.template .agt/fixtures/policy.test.yaml
+# Çalıştır: agt test .agt/policy.yaml .agt/fixtures/   (CI'da blocking, exit 0=geçti)
+#
+# Format (AGT 4.1.0 — agent_compliance/policy_test.py):
+#   input: { ... context dict (tool_name, trust_score, ...) ... }
+#   expected_verdict: allow | deny | audit | block
+#   expected_rule: <kural adı>   (opsiyonel)
+# Mismatch → exit 1 → policy değişikliği güvenle yayına alınır.
+# =============================================================================
+
+scenarios:
+  - id: force-push-denied
+    name: "force-push engellenir (K4 çift katman)"
+    input:
+      tool_name: "git_force_push"
+    expected_verdict: deny
+    expected_rule: block-force-push
+
+  - id: memory-delete-denied
+    name: "hafıza silme engellenir (R11-14)"
+    input:
+      tool_name: "fs_delete"
+    expected_verdict: deny
+    expected_rule: block-delete-tools
+
+  - id: external-fetch-audited
+    name: "harici web erişimi audit (R11-13)"
+    input:
+      tool_name: "web_fetch"
+      url: "https://example.com"
+    expected_verdict: audit
+    expected_rule: audit-external-fetch
+
+  - id: file-write-audited
+    name: "dosya yazımı audit (gitleaks katmanı)"
+    input:
+      tool_name: "write_file"
+    expected_verdict: audit
+    expected_rule: audit-secret-write
+
+  - id: low-trust-denied
+    name: "düşük trust ajan delegasyonu engellenir (F5)"
+    input:
+      tool_name: "agent_delegate"
+      trust_score: 0.4
+    expected_verdict: deny
+    expected_rule: deny-low-trust-delegate
+
+  - id: normal-tool-allowed
+    name: "normal tool çağrısı izinli"
+    input:
+      tool_name: "read_file"
+      trust_score: 0.9
+    expected_verdict: allow

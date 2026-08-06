@@ -1,0 +1,66 @@
+# =============================================================================
+# .agt/manifest.yaml.template — AGT Agent Manifest & Trust Mesh (F2 · T2.3)
+# =============================================================================
+# Kopyala:  cp .agt/manifest.yaml.template .agt/manifest.yaml
+# Rol:      her ajanın kimliği (DID), görev sınırı (scope), güven skoru,
+#           delegasyon kuralları — multi-agent projelerde denetlenebilirlik.
+# İlişki:   policy.yaml (tool kuralları) × manifest.yaml (ajan kimlikleri)
+#           = "bu ajan bu tool'u yapabilir mi" (F5 agent mesh'in yerel karşılığı).
+# NOT:      tek-ajan projede yalnız `coder` gerekir; ekip kurarken ekle.
+# =============================================================================
+
+apiVersion: governance.toolkit/v1
+version: v1
+name: temel-agent-manifest
+
+# --- Ajan kayıtları ---
+agents:
+  # Birincil üretim ajanı: plan yazar, kod yazar, commit'e plan trailer ekler.
+  # Asla approved_by yazamaz (R11-04: kendi değişikliğini onaylayamaz).
+  - id: "did:temel:coder"
+    name: "Coder"
+    role: "implementation"
+    trust_score: 0.9
+    capabilities: ["plan", "code", "commit"]
+    denied_capabilities: ["approve", "force_push", "memory_delete"]
+    delegation:
+      allowed: true
+      max_depth: 1            # coder → verifier ötesine geçemez
+      allowed_targets: ["did:temel:verifier"]
+
+  # Denetim ajanı: SALT-OKUNUR (R11-12). Yazma aracı tanımlanmaz — auditor
+  # yazan-doğrulayan ayrımını korur, hafızaya asla yazamaz.
+  - id: "did:temel:verifier"
+    name: "Verifier"
+    role: "audit"
+    trust_score: 0.95
+    capabilities: ["read", "verify", "audit"]
+    denied_capabilities: ["write", "approve", "delegate"]
+    delegation:
+      allowed: false          # auditor hiçbir şeye delegasyon yapamaz
+
+  # İnsan: en yüksek yetki — approved_by sahibi (R11-04).
+  # Manifest'e kayıtlı olması audit izi için; policy'de insan onayı şartı buna bağlanır.
+  - id: "did:temel:human"
+    name: "Human"
+    role: "owner"
+    trust_score: 1.0
+    capabilities: ["approve", "all"]
+    denied_capabilities: []
+    delegation:
+      allowed: true
+      max_depth: 3
+
+# --- Varsayılanlar (kayıtlı olmayan ajan = fail-closed) ---
+defaults:
+  trust_score: 0.0            # bilinmeyen ajan güvenilmez
+  capabilities: ["read"]      # salt okuma dışında hiçbir şey yok
+  delegation:
+    allowed: false
+
+# --- Audit kuralları ---
+audit:
+  # Her karar (plan onayı, commit, deploy) Merkle zincirine eklenir (F5).
+  chain_enabled: true
+  tamper_evidence: "sha256"
+  log_every_decision: true

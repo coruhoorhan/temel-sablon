@@ -7,6 +7,20 @@
 - Stack: TypeScript 5.9 strict · Vite · Vitest 4 · ESLint 10 (flat) · FSD (feature-sliced)
 - Ortam: Linux (Arch/Ubuntu/Debian), Node 24 LTS
 
+## Hafıza (Midas — F1)
+- **Ajan sözleşmesi:** `midas-policy.md` (ne zaman capture / provenance hiyerarşisi / kind+TTL haritası)
+- **Config:** `.midas/config.yaml.template` → kurulumda `.midas/config.yaml` (env: NLI=1, SUPERSEDE=1 zorunlu)
+- **Makine zorlaması:** TTL/supersession/dedup/guard Midas'ta; CI denetimi `.github/workflows/midas.yml` (salt-okunur auditor, R11-12)
+- **Kural katmanı:** `.archcore/rules/11-hafiza.rule.md` (R11-01..14) — Midas bu kuralların makine tarafıdır
+
+## Governance (AGT — F2)
+- **Policy:** `.agt/policy.yaml` (tool kuralları — deny: yıkıcı git/hafıza silme; audit: harici erişim/secret yazımı)
+- **Manifest:** `.agt/manifest.yaml` (ajan kimlikleri + trust — coder/verifier/human; bilinmeyen ajan fail-closed)
+- **OWASP ASI 2026:** `agt verify` 10/10 zorunlu — `.github/workflows/agt-verify.yml` (CI kapısı)
+- **Prompt defense:** `agt red-team scan` — agent prompt'ları min C notu (T8'de blocking; şu an rapor)
+- **Policy doğrulama:** `agt lint-policy --strict` + `agt test .agt/policy.yaml .agt/fixtures/` (fixture replay)
+- **Lehçe:** push öncesi `agt lint-policy` + prompt defense raporu (pre-push, fail-open — CI zorlar)
+
 ## Kurallar (KATMAN 1 — bilgi)
 - **11 kural kategorisi:** `.archcore/rules/01-tipler.rule.md` … `11-hafiza.rule.md`
 - Her kural ya makine kapısına (ESLint kural ID / tsc flag / vitest eşiği) ya verifier kontrol listesine bağlıdır.

@@ -51,6 +51,33 @@ pre-push:
       run: npm run lint
     - name: tests
       run: npm test
+    # ---- AGT (F2 · T2.5): policy + prompt defense push öncesi ----
+    # Fail-open (bilgi amaçlı): agt yoksa push engellenmez — CI (K3) zorlar.
+    # Policy template'ten üretilen gerçek dosyayı lint'ler; şema bozuksa uyarır.
+    - name: agt-lint-policy
+      run: |
+        if command -v agt >/dev/null 2>&1; then
+          if [ -f .agt/policy.yaml ]; then
+            agt lint-policy .agt/policy.yaml --strict || { echo "AGT: policy şeması bozuk"; exit 1; }
+          elif [ -f .agt/policy.yaml.template ]; then
+            cp .agt/policy.yaml.template /tmp/agt-policy.yaml
+            agt lint-policy /tmp/agt-policy.yaml --strict || { echo "AGT: policy template bozuk"; exit 1; }
+          fi
+        else
+          echo "AGT yok — policy kapısı CI'da (agt-verify.yml) zorlanacak"
+        fi
+      skip:
+        - ref: main        # ana dala doğrudan push zaten CI'dan (K3) geçer
+    - name: agt-prompt-defense
+      # Bilgi amaçlı — prompt defense notu raporlanır, push engellenmez.
+      # T8'de blocking yapılacak (--min-grade C).
+      run: |
+        if command -v agt >/dev/null 2>&1; then
+          GRADE=$(agt red-team scan AGENTS.md 2>/dev/null | grep -oP 'Grade: \K[A-F]' | head -1)
+          echo "AGT: AGENTS.md prompt defense grade=${GRADE:-?} (T8'de blocking)"
+        fi
+      skip:
+        - ref: main
 
 # ---- commit-msg: commit mesajı kapıları ----
 # Amaç: plan onay kapısı (plan: <id> + accepted + hash) ve conventional commit.

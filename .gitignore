@@ -32,3 +32,15 @@ npm-debug.log*
 
 # Tooling
 .archcore/tmp/
+
+# Midas hafıza — SQLite veritabanı + yerel config asla commit'e girmez.
+# Şablon (.template) ve policy (.md) commit'lenir; memory ve config düzenlenebilir durumdur.
+.midas/memory.sqlite3
+.midas/config.yaml
+.midas/*.db
+.midas/*.db-*
+.midas/audit*.log
+
+# AGT — template'ten üretilen gerçek policy/fixture'lar commit'e girmez (setup.sh üretir).
+.agt/policy.yaml
+.agt/fixtures/policy.test.yaml
