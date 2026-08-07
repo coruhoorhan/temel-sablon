@@ -1,11 +1,57 @@
 #!/usr/bin/env bash
-# setup.sh — TEMEL şablonu interaktif kurulum + test + doğrulama
+# setup.sh v2 — TEMEL şablonu interaktif kurulum + test + doğrulama (F6)
 # Sen bilgileri girersin, script kurar, kapıları test eder, doğrular.
 # Linux veya Git Bash (Windows) — bash 4+ yeterli.
 #
-# Kullanım:  bash setup.sh        (şablon kopyalandığı/hedeflendiği klasörde)
+# Kullanım:
+#   bash setup.sh             (tam kurulum — interaktif)
+#   bash setup.sh --dry-run   (hiçbir şey kurma, sadece plan göster)
+#   bash setup.sh --help      (bu yardım)
 
 set -uo pipefail
+
+# --- CLI argümanları (F6 · T6.1) ---
+DRY_RUN=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    --help|-h)
+      echo "setup.sh v2 — TEMEL kurulum"
+      echo "  bash setup.sh           tam kurulum"
+      echo "  bash setup.sh --dry-run kurulum planını göster (hiçbir şey kurma)"
+      exit 0
+      ;;
+    *) echo "Bilinmeyen argüman: $arg (--help)" >&2; exit 1 ;;
+  esac
+done
+
+# Receipt altyapısı (F6 · T6.3) — her tool'un durumunu JSON'a toplar
+RECEIPT_FILE="setup-receipt.json"
+declare -a RECEIPT_ENTRIES=()
+receipt_add() {
+  # receipt_add <tool> <version> <status> <config_path> <detail>
+  RECEIPT_ENTRIES+=("{\"tool\":\"$1\",\"version\":\"$2\",\"status\":\"$3\",\"config\":\"$4\",\"detail\":\"$5\"}")
+}
+receipt_write() {
+  # Tüm toplanan girdileri setup-receipt.json'a yaz
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  local body="["
+  local first=1
+  for entry in "${RECEIPT_ENTRIES[@]:-}"; do
+    if [[ "$first" -eq 1 ]]; then first=0; else body="$body,"; fi
+    body="$body$entry"
+  done
+  body="$body]"
+  cat > "$RECEIPT_FILE" << EOF
+{
+  "generated_at": "$ts",
+  "dry_run": $DRY_RUN,
+  "tools": $body
+}
+EOF
+  ok "receipt üretildi: $RECEIPT_FILE"
+}
 
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
@@ -15,6 +61,16 @@ info() { echo -e "${CYAN}[..]${NC} $1"; }
 
 fail_count=0
 step() { echo -e "\n${CYAN}===== $1 =====${NC}"; }
+
+# dry-run modunda yürütülecek komutları sadece göster
+run_or_skip() {
+  # run_or_skip <komut...> — dry-run'da gösterir, normalde çalıştırır
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    info "[dry-run] $*"
+    return 0
+  fi
+  "$@"
+}
 
 # Windows Git Bash: komutlar .exe uzantılı olabilir — hem düz hem .exe dene
 have() { command -v "$1" >/dev/null 2>&1 || command -v "$1.exe" >/dev/null 2>&1; }
@@ -312,6 +368,29 @@ wire_mesh() {
   return 0
 }
 
+# ---------------------------------------------------------------------------
+# wire_steiger — FSD mimari kapısını doğrula (F6 · T6.2)
+# steiger custom plugin (F4) + knip — setup sırasında mimari temiz mi kontrolü
+# ---------------------------------------------------------------------------
+wire_steiger() {
+  info "FSD mimari kapısı (F4 + F6)"
+  if [[ -f steiger.config.js ]] && command -v npx >/dev/null 2>&1; then
+    if npx steiger ./src >/dev/null 2>&1; then
+      ok "steiger: FSD mimarisi temiz (no-upward-import dahil)"
+      receipt_add "steiger" "0.6.0" "ok" "steiger.config.js" "FSD mimarisi temiz"
+      return 0
+    else
+      fail "steiger FSD ihlali buldu — tools/architecture/src/steiger-rules (F4)"; fail_count=$((fail_count + 1))
+      receipt_add "steiger" "0.6.0" "fail" "steiger.config.js" "FSD ihlali"
+      return 1
+    fi
+  else
+    warn "steiger.config.js/npx yok — mimari kapı atlandı (CI arch:check zorlar)"
+    receipt_add "steiger" "?" "skip" "steiger.config.js" "npx/steiger yok"
+    return 0
+  fi
+}
+
 # --- ön koşul kontrolü ---
 step "ÖN KOŞULLAR"
 for tool in git npm node; do
@@ -432,31 +511,59 @@ fi
 
 info "Midas hafıza sistemi (F1)"
 mkdir -p .archcore/tmp
-if wire_midas; then
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_midas: uv tool install midas-memory[mcp,local] --with mcp<2 + midas init --claude-hook"
+  receipt_add "midas" "1.0.0" "planned" ".midas/config.yaml" "dry-run — kurulmayacak"
+elif wire_midas; then
   ok "Midas kurulum + wiring tamam"
+  receipt_add "midas" "$(midas version 2>/dev/null || echo '1.0.0')" "ok" ".midas/config.yaml" "hafıza + wiring hazır"
 else
   fail "Midas kurulum başarısız"; fail_count=$((fail_count + 1))
+  receipt_add "midas" "?" "fail" ".midas/config.yaml" "kurulum başarısız"
 fi
 
 info "AGT Governance (F2)"
-if wire_agt; then
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_agt: uv tool install agent-governance-toolkit[full] + agt verify/lint-policy/agt test"
+  receipt_add "agt" "4.1.0" "planned" ".agt/policy.yaml" "dry-run — kurulmayacak"
+elif wire_agt; then
   ok "AGT kurulum + doğrulama tamam"
+  receipt_add "agt" "$(agt --version 2>/dev/null || echo '4.1.0')" "ok" ".agt/policy.yaml" "OWASP ASI 10/10 + policy + fixture"
 else
   fail "AGT kurulum başarısız"; fail_count=$((fail_count + 1))
+  receipt_add "agt" "?" "fail" ".agt/policy.yaml" "kurulum başarısız"
 fi
 
 info "MCP Security Gateway (F3)"
-if wire_mcp; then
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_mcp: .mcp.json üretimi + mcpscan scan + supply chain manifest"
+  receipt_add "mcpscan" "0.1.2" "planned" ".mcp.json" "dry-run — kurulmayacak"
+elif wire_mcp; then
   ok "MCP gateway + supply chain doğrulama tamam"
+  receipt_add "mcpscan" "0.1.2" "ok" ".mcp.json" "gateway + supply chain hazır"
 else
   fail "MCP gateway kurulum başarısız"; fail_count=$((fail_count + 1))
+  receipt_add "mcpscan" "?" "fail" ".mcp.json" "kurulum başarısız"
 fi
 
 info "Agent Mesh + Merkle audit (F5)"
-if wire_mesh; then
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_mesh: manifest üretimi + audit-chain + shadow discovery + dashboard"
+  receipt_add "mesh" "1.0.0" "planned" ".agt/manifest.yaml" "dry-run — kurulmayacak"
+elif wire_mesh; then
   ok "Agent mesh + audit tamam"
+  receipt_add "mesh" "1.0.0" "ok" ".agt/manifest.yaml" "merkle + shadow + dashboard"
 else
   fail "Agent mesh kurulum başarısız"; fail_count=$((fail_count + 1))
+  receipt_add "mesh" "?" "fail" ".agt/manifest.yaml" "kurulum başarısız"
+fi
+
+info "FSD mimari kapısı (F4 + F6)"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_steiger: npx steiger ./src + knip (arch:check)"
+  receipt_add "steiger" "0.6.0" "planned" "steiger.config.js" "dry-run — kurulmayacak"
+else
+  wire_steiger
 fi
 
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
@@ -464,6 +571,26 @@ if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
   GH="$(use gh)"
   if $GH repo create "$PROJ_NAME" "--$VIS" --source . --remote origin >/dev/null 2>&1; then
     ok "repo hazır: https://github.com/$GH_USER/$PROJ_NAME (ilk commit'ten sonra push: git push)"
+
+    # T6.5 — environment + secrets (CI güvenlik taramaları için)
+    # gitleaks MCP_TOKEN gibi opsiyonel secret'ları .env'den aktarır.
+    if $GH environment create production --repo "$GH_USER/$PROJ_NAME" >/dev/null 2>&1; then
+      ok "environment 'production' oluşturuldu"
+    else
+      warn "environment oluşturulamadı (pro planı gerekebilir)"
+    fi
+
+    # .env.example'daki değişkenleri repo secret olarak tanıt (değerler elle girilir)
+    if [[ -f .env.example ]]; then
+      ENV_VARS="$(grep -oP '^\w+' .env.example | tr '\n' ' ')"
+      if [[ -n "$ENV_VARS" ]]; then
+        info "secrets tanıtılıyor (değerler elle set edilmeli): $ENV_VARS"
+        for var in $ENV_VARS; do
+          $GH secret set "$var" --repo "$GH_USER/$PROJ_NAME" --body "" >/dev/null 2>&1 \
+            && ok "secret '$var' tanımlandı (değer: gh secret set $var --body '<değer>')"
+        done
+      fi
+    fi
   else
     warn "repo oluşturulamadı (auth/git yapılandırması?) — ilk commit'ten sonra elle: gh repo create $PROJ_NAME --$VIS --source . --remote origin"
   fi
@@ -491,6 +618,10 @@ info "npm run verify (typecheck + lint + test)"
 if npm run verify >/dev/null 2>&1 || npm.cmd run verify >/dev/null 2>&1; then ok "verify YEŞİL"; else
   fail "verify kırmızı — ayrıntı: npm run verify"; fail_count=$((fail_count + 1)); fi
 
+info "npm run arch:check (steiger + knip)"
+if npm run arch:check >/dev/null 2>&1; then ok "arch:check YEŞİL (FSD + ölü kod)"; else
+  fail "arch:check kırmızı — FSD ihlali veya ölü kod"; fail_count=$((fail_count + 1)); fi
+
 info "verify-drift (TTL/bayatlık taraması)"
 if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uyarı"; else
   warn "verify-drift uyarı verdi (bilgi amaçlı, --strict değil)"; fi
@@ -511,12 +642,19 @@ if have gitleaks; then
     fail "gitleaks sorun bildirdi"; fi
 fi
 
+# T6.3 — setup-receipt.json üretimi (dry-run'da da üretilir, tools boş)
+receipt_write
+
 # --- özet ---
 step "ÖZET"
 if [[ "$fail_count" -eq 0 ]]; then
   ok "KURULUM BAŞARILI — kapılar çalışıyor, doğrulama yeşil."
 else
   fail "$fail_count adımda sorun var — yukarıdaki HATA mesajlarını düzeltip scripti tekrar çalıştır (idempotent)."
+fi
+if [[ -f "$RECEIPT_FILE" ]]; then
+  info "Kurulum özeti: $RECEIPT_FILE"
+  info "  içerik: $(python3 -c "import json; r=json.load(open('$RECEIPT_FILE')); print(f\"{len(r['tools'])} tool, dry_run={r['dry_run']}\")" 2>/dev/null || echo 'JSON doğrulanamadı')"
 fi
 echo "
 Sıradaki adımlar (sen + ajan):

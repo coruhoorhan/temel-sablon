@@ -56,3 +56,6 @@ npm-debug.log*
 # Merkle audit — zincir dosyası + dashboard (otomatik üretilir)
 .archcore/audit-chain.json
 docs/governance-dashboard.html
+
+# setup.sh v2 — kurulum receipt (otomatik üretilir, F6)
+setup-receipt.json
