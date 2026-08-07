@@ -2,18 +2,18 @@
 description: F7 (CI/CD Unification) — verify.yml birleşik pipeline + matrix + artifact + branch protection
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 1cd60bbdac79168c0eff162896e75f3d52b0b67df07b6e27c95b250ad9c300d9
-last_approved: 2026-08-07T06:03:06Z
-last_review_date: 2026-08-07T06:03:06Z
+plan_hash: 20082baf95d3951fcdd8638b02afee01df8f7c158517aa49914db5eb3ddc8801
+last_approved: 2026-08-07T06:05:32Z
+last_review_date: 2026-08-07T06:05:32Z
 ttl_days: 90
 allowed_paths:
-  - ".github/workflows/verify.yml"
-  - ".github/workflows/ci.yml"
-  - "setup.sh"
-  - "AGENTS.md"
-  - ".archcore/plans/f6-setup-v2.plan.md"
-  - ".archcore/plans/f7-ci-unify.plan.md"
-  - ".gitignore"
+  - .github/workflows/verify.yml
+  - .github/workflows/ci.yml
+  - setup.sh
+  - AGENTS.md
+  - .archcore/plans/f6-setup-v2.plan.md
+  - .archcore/plans/f7-ci-unify.plan.md
+  - .gitignore
 ---
 
 # Plan: f7-ci-unify
