@@ -1,0 +1,69 @@
+<mxfile host="Electron" modified="2026-08-07T00:00:00.000Z" version="26.0.0">
+  <diagram id="veri-akisi" name="Veri Akışı">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title3" value="VERİ AKIŞI — HAFIZA &amp; GOVERNANCE" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="800" height="34" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ajan" value="🤖 Ajan&#10;(opencode / Claude Code)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="midas" value="🧠 Midas Hafıza&#10;capture / recall&#10;TTL + supersession + dedup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="420" y="80" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="a2m" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="ajan" target="midas">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agt" value="🛡 AGT Governance&#10;policy.yaml + manifest&#10;OWASP ASI 10/10" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="420" y="280" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="a2g" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="ajan" target="agt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mesh" value="🔗 Agent Mesh&#10;audit-chain.py (Merkle)&#10;shadow-discovery.py" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="420" y="480" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="g2m" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="agt" target="mesh">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ci" value="🚦 CI (verify.yml)&#10;plan-gate + agt + midas + mcpscan&#10;Node 20/22 × Py 3.11/3.12" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="880" y="120" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="g2c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="agt" target="ci">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m2c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="midas" target="ci">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="me2c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="mesh" target="ci">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="art" value="📦 Artifact'lar&#10;AGT attestation&#10;midas receipt&#10;mcpscan report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="880" y="320" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="c2a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="ci" target="art">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dash" value="📊 Governance Dashboard&#10;docs/governance-dashboard.html" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="880" y="500" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="me2d" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="1" source="mesh" target="dash">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="not3" value="Tüm akışlar denetim izi bırakır (R11-11)&#10;Dış içerik hafızaya candidates/ + source + insan onayı ile girer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="420" y="640" width="600" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

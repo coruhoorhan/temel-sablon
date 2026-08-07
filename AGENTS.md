@@ -3,6 +3,15 @@
 > Bu dosya yalnızca köprüdür: kuralları kendisi yazmaz, nerede olduğunu söyler.
 > Kural ekleme → `.archcore/rules/` (düz markdown, bu dosyayı şişirme — limit 50KB).
 
+## Import'lar (oturum başında yüklenir)
+
+- `@.midas/midas-policy.md` — hafıza sözleşmesi (F1)
+- `@.agt/policy.yaml` — tool kuralları (F2)
+- `@tools/architecture/src/steiger-rules/` — FSD katman kuralı (F4)
+
+> `setup.sh` bunları `.template`'lerden üretir (`.midas/config.yaml`, `.agt/policy.yaml`,
+> `.agt/manifest.yaml`). Şablon dışı ortamda eksikse önce `bash setup.sh`.
+
 ## Proje Kimliği
 - Stack: TypeScript 5.9 strict · Vite · Vitest 4 · ESLint 10 (flat) · FSD (feature-sliced)
 - Ortam: Linux (Arch/Ubuntu/Debian), Node 24 LTS
