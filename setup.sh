@@ -591,6 +591,26 @@ if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
         done
       fi
     fi
+
+    # T7.4 — Branch protection: main'e doğrudan push engeli + required checks
+    # Required checks: verify + security-* (SAST/SCA/container) + agent-mesh.
+    # NOT: gh api ile branch protection yalnız pro planı reposunda çalışır.
+    info "branch protection kuruluyor (required checks)..."
+    if $GH api "repos/$GH_USER/$PROJ_NAME/branches/main/protection" \
+      -X PUT \
+      -f "required_status_checks[strict]=true" \
+      -f "required_status_checks[checks][][context]=verify" \
+      -f "required_status_checks[checks][][context]=security-sast" \
+      -f "required_status_checks[checks][][context]=security-sca" \
+      -f "required_status_checks[checks][][context]=security-container" \
+      -f "required_status_checks[checks][][context]=agent-mesh" \
+      -f "enforce_admins=true" \
+      -f "required_pull_request_reviews[required_approving_review_count]=1" \
+      -f "restrictions=null" >/dev/null 2>&1; then
+      ok "branch protection: required checks verify/security-*/agent-mesh"
+    else
+      warn "branch protection kurulamadı (pro planı gerekebilir — elle: Settings > Branches)"
+    fi
   else
     warn "repo oluşturulamadı (auth/git yapılandırması?) — ilk commit'ten sonra elle: gh repo create $PROJ_NAME --$VIS --source . --remote origin"
   fi

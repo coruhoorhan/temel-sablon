@@ -41,6 +41,12 @@
 - **Dashboard:** `.archcore/bin/gov-dashboard.py` → `docs/governance-dashboard.html` (R11-11 denetim izi)
 - **CI:** `.github/workflows/agent-mesh.yml` — zincir doğrulama + shadow + trust şeması
 
+## CI/CD (F7)
+- **Birleşik pipeline:** `.github/workflows/verify.yml` — typecheck + lint + test + arch + plan-gate + AGT + Midas + mcpscan
+- **Matrix:** Node 20/22 × Python 3.11/3.12 (code-quality job)
+- **Security-* ayrı:** SAST (Semgrep), SCA (OSV-Scanner), container (Trivy) — uzmanlaşmış, dokunulmaz
+- **Branch protection:** main'e required checks (verify + security-*) — setup.sh T7.4
+
 ## Kurallar (KATMAN 1 — bilgi)
 - **11 kural kategorisi:** `.archcore/rules/01-tipler.rule.md` … `11-hafiza.rule.md`
 - Her kural ya makine kapısına (ESLint kural ID / tsc flag / vitest eşiği) ya verifier kontrol listesine bağlıdır.

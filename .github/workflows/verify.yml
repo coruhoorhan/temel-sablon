@@ -1,0 +1,167 @@
+# verify.yml — TEMEL birleşik CI kapısı (F7 · T7.1-7.3)
+# ci.yml'nin yerini alır: typecheck + lint + test + arch + agt + midas + mcpscan
+# tek pipeline'da. Matrix: Node 20/22 (LTS çifti) × Python 3.11/3.12.
+# Security-* (SAST/SCA/container) + agent-mesh ayrı workflow'larda kalır —
+# burada yalnız ana doğrulama zinciri birleştirilir (fail-fast: kod hataları
+# güvenlik taramalarından ÖNCE yakalanır).
+
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ---- T7.2 · Matrix: Node 20/22 (LTS) — kod kalitesi çekirdeği ----
+  code-quality:
+    name: lint + typecheck + test + arch (${{ matrix.node }}, py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # plan-gate (verify-pr) tam geçmiş ister
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - run: npm ci --no-audit
+
+      # ---- T7.1 · Birleşik doğrulama zinciri ----
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: lint
+        run: npm run lint
+
+      - name: test + coverage
+        run: npm test -- --coverage
+
+      - name: arch:check (steiger FSD + knip)
+        run: npm run arch:check
+
+      - name: plan kapısı (verify-pr)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha }}
+        run: bash .archcore/bin/verify-pr "$BASE_SHA" "$HEAD_SHA"
+
+  # ---- T7.1 · AGT governance (Python 3.12 sabit — AGT uyumlu) ----
+  governance:
+    name: OWASP ASI + policy + fixture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install AGT
+        run: |
+          uv tool install "agent-governance-toolkit[full]" --force || uv tool install "agent-governance-toolkit" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: OWASP ASI verify (10/10 zorunlu)
+        run: |
+          agt verify 2>&1 | tee /tmp/agt-verify.log
+          grep -q "10/10" /tmp/agt-verify.log || { echo "::error:: OWASP ASI 10/10 DEĞİL"; exit 1; }
+      - name: Policy lint + fixture replay
+        run: |
+          [ -f .agt/policy.yaml ] || cp .agt/policy.yaml.template .agt/policy.yaml
+          agt lint-policy .agt/policy.yaml --strict || { echo "::error:: policy bozuk"; exit 1; }
+          agt test .agt/policy.yaml .agt/fixtures/ || { echo "::error:: fixture mismatch"; exit 1; }
+
+      # ---- T7.3 · Artifact: AGT attestation (JSON) ----
+      - name: Upload AGT attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: agt-attestation
+          path: /tmp/agt-verify.log
+          if-no-files-found: warn
+
+  # ---- T7.1 · Midas hafıza auditor (salt-okunur, R11-12) ----
+  memory:
+    name: midas doctor + wiring receipt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install Midas
+        run: |
+          uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || uv tool install "midas-memory" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: midas doctor
+        run: 'midas doctor 2>&1 || { echo "::error:: midas doctor başarısız"; exit 1; }'
+      - name: wiring receipt şeması
+        run: |
+          midas status --json > /tmp/midas-receipt.json
+          python3 -c "
+          import json
+          r = json.load(open('/tmp/midas-receipt.json'))
+          need = ['midas_version','memory_db','embedder','policy','clients']
+          miss = [k for k in need if k not in r]
+          assert not miss, f'receipt eksik: {miss}'
+          print('✓ receipt şeması OK')
+          "
+
+      # ---- T7.3 · Artifact: wiring receipt ----
+      - name: Upload midas receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: midas-receipt
+          path: /tmp/midas-receipt.json
+          if-no-files-found: warn
+
+  # ---- T7.1 · MCP güvenlik + supply chain ----
+  mcp-security:
+    name: mcpscan + mcp-scan primitives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit
+      - name: mcpscan (fail-on high)
+        run: |
+          npx -y @nileshbera/mcpscan scan --fail-on high --json > /tmp/mcpscan-report.json || {
+            echo "::error:: MCP high+ bulgu"; exit 1; }
+          echo "✓ mcpscan temiz"
+
+      # ---- T7.3 · Artifact: mcpscan raporu (GitHub Security tab'a SARIF
+      # dönüştürülemez — JSON raporu artifact olarak yüklenir) ----
+      - name: Upload mcpscan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpscan-report
+          path: /tmp/mcpscan-report.json
+          if-no-files-found: warn

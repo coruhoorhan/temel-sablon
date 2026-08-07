@@ -2,10 +2,16 @@
 description: F6 (setup.sh v2) — full wiring + receipt + dry-run + GitHub secrets/environments
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 7946b70396e44e382443ae32380db2bdd99fd6b0514befd36675b919ede64180
-last_approved: 2026-08-07T05:29:54Z
-last_review_date: 2026-08-07T05:29:54Z
+plan_hash: 11d211a4ea76516d7c0a797ef03f3389ce4674be346d80d6376bf3c58deecbd1
+last_approved: 2026-08-07T06:02:47Z
+last_review_date: 2026-08-07T06:02:47Z
 ttl_days: 90
+allowed_paths:
+  - "setup.sh"
+  - ".gitignore"
+  - ".archcore/plans/f6-setup-v2.plan.md"
+  - "AGENTS.md"
+  - ".github/workflows/**"
 ---
 
 # Plan: f6-setup-v2
