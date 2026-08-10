@@ -125,7 +125,7 @@ jobs:
       - name: midas doctor
         run: |
           midas init 2>&1 | tail -2 || true
-          midas doctor 2>&1 | tee /tmp/midas-doctor.log
+          midas doctor 2>&1 | tee /tmp/midas-doctor.log || true
           if grep -q "✗" /tmp/midas-doctor.log; then
             echo "::error:: midas doctor gerçek hata bildirdi (✗) — log: /tmp/midas-doctor.log"
             exit 1

@@ -60,11 +60,11 @@ jobs:
       # doctor: store/embedder/MCP durumu — önce init (CI'da store yoktur),
       # sonra doctor; çıktı tee ile log'lanır (hata teşhisi için)
       # NOT: 'clients wired: none' CI'da NORMAL (runner'da Claude Code/Codex yok) —
-      # doktor uyarıyla exit 0 döner, sadece gerçek hata exit 1 üretir.
+      # doktor bu uyarıyla exit 1 döner; pipefail bunu pipeline'a taşır, || true yutar.
       - name: midas doctor
         run: |
           midas init 2>&1 | tail -2 || true
-          midas doctor 2>&1 | tee /tmp/midas-doctor.log
+          midas doctor 2>&1 | tee /tmp/midas-doctor.log || true
           if grep -q "✗" /tmp/midas-doctor.log; then
             echo "::error:: midas doctor gerçek hata bildirdi (✗) — log: /tmp/midas-doctor.log"
             exit 1
