@@ -2,10 +2,20 @@
 description: F3 (MCP Security Gateway + MCPScan + supply chain) — MCP server güvenliği katmanı
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 401f1c324aa53fff283d78d644cc225a1950023ff1a0316db9fb682c9136a611
-last_approved: 2026-08-06T07:47:31Z
-last_review_date: 2026-08-06T07:47:31Z
+plan_hash: d98666fb7914f9d97b39c92c76ee6ceed688c226cea8f4b70948f2b7f1723fa3
+last_approved: 2026-08-10T05:44:06Z
+last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90
+allowed_paths:
+  - .agt/mcp-gateway.yaml.template
+  - .archcore/plans/f3-mcp-security.plan.md
+  - .archcore/supply-chain-manifest.txt
+  - .github/workflows/mcpscan.yml
+  - .github/workflows/supply-chain.yml
+  - .gitignore
+  - .mcp.json.template
+  - AGENTS.md
+  - setup.sh
 ---
 
 # Plan: f3-mcp-security

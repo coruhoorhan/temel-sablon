@@ -2,10 +2,20 @@
 description: F5 (Agent Mesh) — DID/trust mesh + Merkle audit + shadow AI discovery + dashboard
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: d4c1865eddb8ea5751ee2948cfc63197dce8079979e9095878c1789c0b20932a
-last_approved: 2026-08-06T14:24:58Z
-last_review_date: 2026-08-06T14:24:58Z
+plan_hash: 2508754392accd40cdaa35899cf422a50669cb4888a3d4ec8097e321df9cd4af
+last_approved: 2026-08-10T05:44:06Z
+last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90
+allowed_paths:
+  - .agt/manifest.yaml.template
+  - .archcore/bin/audit-chain.py
+  - .archcore/bin/gov-dashboard.py
+  - .archcore/bin/shadow-discovery.py
+  - .archcore/plans/f5-agent-mesh.plan.md
+  - .github/workflows/agent-mesh.yml
+  - .gitignore
+  - AGENTS.md
+  - setup.sh
 ---
 
 # Plan: f5-agent-mesh

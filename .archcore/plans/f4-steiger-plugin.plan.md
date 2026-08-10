@@ -2,10 +2,17 @@
 description: F4 (Steiger Custom FSD Plugin) — katman sızıntısı zorlaması
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 38c44974fda738e98641dab9ae40d71607eeef556149471d8387fd0ab3ab926e
-last_approved: 2026-08-06T12:18:57Z
-last_review_date: 2026-08-06T12:18:57Z
+plan_hash: 6b95bc5a39c7084e0595a680596e56efe0bd771346dd2ced6a37a3eee0a3ffda
+last_approved: 2026-08-10T05:44:06Z
+last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90
+allowed_paths:
+  - .archcore/plans/f4-steiger-plugin.plan.md
+  - AGENTS.md
+  - steiger.config.js
+  - tools/architecture/scripts/check-arch.sh
+  - tools/architecture/src/steiger-rules/index.ts
+  - tools/tsconfig.json
 ---
 
 # Plan: f4-steiger-plugin

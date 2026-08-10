@@ -2,10 +2,23 @@
 description: F1 (Midas hafıza) + F2 (AGT governance) entegrasyonu — şablona hafıza ve OWASP ASI katmanları eklenir
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 355491aff7d823e5c6202fa76b51752a521ee84a00c80825f97f39f605b980c5
-last_approved: 2026-08-06T05:38:17Z
-last_review_date: 2026-08-06T05:38:17Z
+plan_hash: 019fd12958c5210ee985e21604f02f3ca76326b8fb6a9ced653615fd149cf527
+last_approved: 2026-08-10T05:44:06Z
+last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90
+allowed_paths:
+  - .agt/fixtures/policy.test.yaml.template
+  - .agt/manifest.yaml.template
+  - .agt/policy.yaml.template
+  - .archcore/plans/f1-f2-midas-agt.plan.md
+  - .github/workflows/agt-verify.yml
+  - .github/workflows/midas.yml
+  - .gitignore
+  - .midas/config.yaml.template
+  - AGENTS.md
+  - lefthook.yml
+  - midas-policy.md
+  - setup.sh
 ---
 
 # Plan: f1-f2-midas-agt
