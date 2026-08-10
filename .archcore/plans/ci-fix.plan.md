@@ -2,15 +2,19 @@
 description: CI kırmızı fix — template üretimi + Node 20 steiger uyumluluğu (verify/agent-mesh/midas)
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 6fe883e7fd9176cbb18afc2ec84bf4ee1eca8d4d56844654ab39ae98dfd90b2e
-last_approved: 2026-08-10T07:26:43Z
-last_review_date: 2026-08-10T07:26:43Z
+plan_hash: 83818253d1605e8a411e7f7489dc7adc676e35c94a30f5131d4ae82b05df2d06
+last_approved: 2026-08-10T07:31:42Z
+last_review_date: 2026-08-10T07:31:42Z
 ttl_days: 90
 allowed_paths:
   - .github/workflows/verify.yml
   - .github/workflows/agent-mesh.yml
-  - steiger.config.js
   - .github/workflows/midas.yml
+  - .archcore/bin/ci-prepare.sh
+  - steiger.config.js
+  - tools/tsconfig.json
+  - tools/architecture/src/steiger-rules/index.js
+  - tools/architecture/src/steiger-rules/index.ts
   - .archcore/plans/ci-fix.plan.md
   - setup.sh
 ---
