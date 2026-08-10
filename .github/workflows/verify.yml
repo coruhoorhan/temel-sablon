@@ -68,7 +68,7 @@ jobs:
       - name: arch:check (steiger FSD + knip)
         run: npm run arch:check
 
-      - name: plan kapısı (verify-pr)
+      - name: Plan kapısı (verify-pr)
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.sha }}
@@ -83,6 +83,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
       - name: Install AGT
         run: |
           uv tool install "agent-governance-toolkit[full]" --force || uv tool install "agent-governance-toolkit" --force
@@ -114,6 +116,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
       - name: Install Midas
         run: |
           uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || uv tool install "midas-memory" --force

@@ -44,6 +44,10 @@ jobs:
           uv tool install "midas-memory" --force
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      # Config template'ten üret (gitignore'lı — CI'da yok, doctor configsiz fail eder)
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
+
       # Şablon config'i doğrula: .midas/config.yaml.template env'leri
       # ve midas-policy.md (R11 sözleşmesi) commit'te olmalı
       - name: Şablon varlık kontrolü

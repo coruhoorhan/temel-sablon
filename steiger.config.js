@@ -4,7 +4,7 @@
 // Katman yukarı import yasak: shared → entities → features → widgets → pages → app
 import { defineConfig } from 'steiger'
 import fsd from '@feature-sliced/steiger-plugin'
-import { createArchitecturePlugin } from './tools/architecture/src/steiger-rules/index.ts'
+import { createArchitecturePlugin } from './tools/architecture/src/steiger-rules/index.js'
 
 export default defineConfig([
   ...fsd.configs.recommended,

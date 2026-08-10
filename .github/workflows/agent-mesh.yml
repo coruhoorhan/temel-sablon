@@ -34,6 +34,9 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
+
       # 1) Merkle audit — zinciri doğrula (tamper varsa red)
       - name: Merkle audit chain verify
         run: |
