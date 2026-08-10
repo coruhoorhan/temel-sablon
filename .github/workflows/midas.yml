@@ -59,11 +59,17 @@ jobs:
 
       # doctor: store/embedder/MCP durumu — önce init (CI'da store yoktur),
       # sonra doctor; çıktı tee ile log'lanır (hata teşhisi için)
+      # NOT: 'clients wired: none' CI'da NORMAL (runner'da Claude Code/Codex yok) —
+      # doktor uyarıyla exit 0 döner, sadece gerçek hata exit 1 üretir.
       - name: midas doctor
         run: |
           midas init 2>&1 | tail -2 || true
           midas doctor 2>&1 | tee /tmp/midas-doctor.log
-          grep -q "Everything looks good" /tmp/midas-doctor.log || { echo "::error:: midas doctor başarısız — log: /tmp/midas-doctor.log"; exit 1; }
+          if grep -q "✗" /tmp/midas-doctor.log; then
+            echo "::error:: midas doctor gerçek hata bildirdi (✗) — log: /tmp/midas-doctor.log"
+            exit 1
+          fi
+          echo "✓ midas doctor OK (uyarılar CI ortamı için normal)"
 
       # Wiring receipt: makine-okur JSON — hangi client wire edildi, hangisi atlandı.
       # CI ortamında gerçek client'lar yoktur (temiz runner) — yapı/şema doğrulanır.
