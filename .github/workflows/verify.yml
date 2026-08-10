@@ -123,7 +123,10 @@ jobs:
           uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || uv tool install "midas-memory" --force
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: midas doctor
-        run: 'midas doctor 2>&1 || { echo "::error:: midas doctor başarısız"; exit 1; }'
+        run: |
+          midas init 2>&1 | tail -2 || true
+          midas doctor 2>&1 | tee /tmp/midas-doctor.log
+          grep -q "Everything looks good" /tmp/midas-doctor.log || { echo "::error:: midas doctor başarısız — log: /tmp/midas-doctor.log"; exit 1; }
       - name: wiring receipt şeması
         run: |
           midas status --json > /tmp/midas-receipt.json

@@ -37,16 +37,16 @@ jobs:
         with:
           enable-cache: true
 
-      # Midas'ı CI'da kur — sürüm pin (choreom: üretimde proxy aynasında kur)
-      - name: Install Midas
-        run: |
-          uv tool install "midas-memory[mcp,local]" --force || \
-          uv tool install "midas-memory" --force
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       # Config template'ten üret (gitignore'lı — CI'da yok, doctor configsiz fail eder)
       - name: Template'lerden gerçek dosyaları üret
         run: bash .archcore/bin/ci-prepare.sh
+
+      # Midas'ı CI'da kur — sürüm pin + mcp<2 sabitlemesi (mcp SDK 2.0 FastMCP'yi kaldırdı)
+      - name: Install Midas
+        run: |
+          uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || \
+          uv tool install "midas-memory" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Şablon config'i doğrula: .midas/config.yaml.template env'leri
       # ve midas-policy.md (R11 sözleşmesi) commit'te olmalı
@@ -57,10 +57,13 @@ jobs:
           test -f .archcore/rules/11-hafiza.rule.md || { echo "::error:: 11-hafiza.rule.md eksik"; exit 1; }
           echo "✓ hafıza şablonları yerinde"
 
-      # doctor: store/embedder/MCP durumu — uyarı varsa uyar, hata varsa fail
+      # doctor: store/embedder/MCP durumu — önce init (CI'da store yoktur),
+      # sonra doctor; çıktı tee ile log'lanır (hata teşhisi için)
       - name: midas doctor
         run: |
-          midas doctor 2>&1 || { echo "::error:: midas doctor başarısız"; exit 1; }
+          midas init 2>&1 | tail -2 || true
+          midas doctor 2>&1 | tee /tmp/midas-doctor.log
+          grep -q "Everything looks good" /tmp/midas-doctor.log || { echo "::error:: midas doctor başarısız — log: /tmp/midas-doctor.log"; exit 1; }
 
       # Wiring receipt: makine-okur JSON — hangi client wire edildi, hangisi atlandı.
       # CI ortamında gerçek client'lar yoktur (temiz runner) — yapı/şema doğrulanır.
