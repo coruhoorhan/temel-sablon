@@ -221,7 +221,16 @@ aynı kapıları zorlar. `approved_by` her zaman insandır — ajan kendini onay
 
 ---
 
-## 7. Yapı (hızlı referans)
+## 7. CI güvenlik kapıları
+
+CI taramaları fail-closed çalışır: HIGH/CRITICAL SCA veya Trivy bulgusu,
+geçersiz AGT policy/fixture, prompt-defense notunun C altına düşmesi veya gerçek
+MCP config taramasının başarısız olması workflow'u kırmızı yapar.
+
+`security-sca.yml`, `security-container.yml`, `mcpscan.yml` ve `verify.yml`
+template'ten gerçek config'leri ürettikten sonra bu config'leri tarar.
+
+## 8. Yapı (hızlı referans)
 
 ```
 ├── AGENTS.md / CLAUDE.md      ajan köprüleri

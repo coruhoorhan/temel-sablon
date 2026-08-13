@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased] — audit remediation
+
+- Security SCA ve Trivy workflow'ları fail-closed yapıldı.
+- OSV dependency sorgusu lockfile'daki tüm `node_modules/` paketlerini tarıyor.
+- MCP taramaları template yerine kurulumda üretilen gerçek config'i kullanıyor.
+- AGT prompt defense minimum C, policy ve fixture kontrolleri zorunlu hâle getirildi.
+- Plan-gate katmanları `approved_by`, `plan_hash` ve `allowed_paths` alanlarını eşit biçimde zorluyor.
+- `setup.sh` güvenlik/doğrulama hatalarını başarı olarak raporlamıyor.
+
 Tüm önemli değişiklikler bu dosyada. Format: [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/),
 sürümleme: [Semantic Versioning](https://semver.org/).
 
