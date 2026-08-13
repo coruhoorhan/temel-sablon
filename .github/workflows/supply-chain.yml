@@ -105,7 +105,7 @@ jobs:
                       ]
                       if severity in {"HIGH", "CRITICAL"} or any(score >= 7.0 for score in scores):
                           critical_high += 1
-               print(f"OSV taraması: {len(queries)} paket sorgulandı, {critical_high} high+ CVE")
+              print(f"OSV taraması: {len(queries)} paket sorgulandı, {critical_high} high+ CVE")
               if critical_high > 0:
                   raise SystemExit(1)
               print("✓ OSV: high+ CVE yok")
