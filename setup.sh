@@ -86,6 +86,7 @@ use()  { if command -v "$1" >/dev/null 2>&1; then echo "$1"; else echo "$1.exe";
 wire_midas() {
   info "Midas hafıza sistemi (kurulum + wiring)"
   MIDAS_OK=0
+  wire_failed=0
 
   # 1) midas CLI var mı?
   if ! have midas; then
@@ -100,14 +101,18 @@ wire_midas() {
       else
         warn "uv tool install başarısız — pip/pipx fallback deneniyor"
         if have pipx; then
-          pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pipx)"; MIDAS_OK=1; }
+          pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && \
+            pipx runpip midas-memory install "mcp<2" >/dev/null 2>&1 && \
+            { ok "midas kuruldu (pipx, mcp<2)"; MIDAS_OK=1; }
         fi
         if [[ "$MIDAS_OK" -eq 0 ]] && have pip; then
-          pip install --user "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pip --user)"; MIDAS_OK=1; }
+          pip install --user "midas-memory[mcp,local]" "mcp<2" >/dev/null 2>&1 && { ok "midas kuruldu (pip --user, mcp<2)"; MIDAS_OK=1; }
         fi
       fi
     elif have pipx; then
-      pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && { ok "midas kuruldu (pipx)"; MIDAS_OK=1; }
+      pipx install "midas-memory[mcp,local]" >/dev/null 2>&1 && \
+        pipx runpip midas-memory install "mcp<2" >/dev/null 2>&1 && \
+        { ok "midas kuruldu (pipx, mcp<2)"; MIDAS_OK=1; }
     else
       warn "uv/pipx yok — TypeScript port deneniyor: npx -y midas-memory-mcp"
       if npm exec --yes midas-memory-mcp -- --version >/dev/null 2>&1; then
@@ -136,7 +141,8 @@ wire_midas() {
     cp .midas/config.yaml.template .midas/config.yaml
     ok ".midas/config.yaml üretildi (template'ten)"
   elif [[ ! -f .midas/config.yaml ]]; then
-    warn ".midas/config.yaml.template YOK — config üretilemedi (şablon eksik?)"
+    fail ".midas/config.yaml.template YOK — config üretilemedi"
+    wire_failed=1
   else
     info ".midas/config.yaml zaten var — korunuyor"
   fi
@@ -145,7 +151,8 @@ wire_midas() {
   if midas init --claude-hook >/dev/null 2>&1; then
     ok "midas init --claude-hook tamam (client wiring)"
   else
-    warn "midas init --claude-hook uyarı verdi — kurulum elle kontrol edilmeli: midas init"
+    fail "midas init --claude-hook başarısız"
+    wire_failed=1
   fi
 
   # 4) Doğrulama
@@ -159,15 +166,17 @@ wire_midas() {
     if grep -q "MIDAS_MCP_NLI.*1" .midas/config.yaml 2>/dev/null; then
       ok "NLI guard açık (config: MIDAS_MCP_NLI=1)"
     else
-      warn "MIDAS_MCP_NLI=1 config'te YOK — provenance guard zayıf (düşük provenance yükseği ezebilir). Düzelt: .midas/config.yaml"
+      fail "MIDAS_MCP_NLI=1 config'te YOK — provenance guard kapalı"
+      wire_failed=1
     fi
     if midas status --json > .archcore/tmp/midas-receipt.json 2>/dev/null; then
       ok "wiring receipt üretildi: .archcore/tmp/midas-receipt.json"
     else
-      warn "midas status --json başarısız — receipt yok"
+      fail "midas status --json başarısız — receipt yok"
+      wire_failed=1
     fi
   fi
-  return 0
+  return "$wire_failed"
 }
 
 # ---------------------------------------------------------------------------
@@ -180,6 +189,7 @@ wire_midas() {
 wire_agt() {
   info "AGT Governance Toolkit (kurulum + doğrulama)"
   AGT_OK=0
+  wire_failed=0
 
   if ! have agt; then
     info "agt bulunamadı — kurulum deneniyor..."
@@ -213,16 +223,32 @@ wire_agt() {
     cp .agt/policy.yaml.template .agt/policy.yaml
     ok ".agt/policy.yaml üretildi (template'ten)"
   fi
+  if [[ ! -f .agt/policy.yaml ]]; then
+    fail ".agt/policy.yaml üretilemedi"
+    wire_failed=1
+  fi
   if [[ ! -f .agt/fixtures/policy.test.yaml && -f .agt/fixtures/policy.test.yaml.template ]]; then
     cp .agt/fixtures/policy.test.yaml.template .agt/fixtures/policy.test.yaml
     ok ".agt/fixtures/policy.test.yaml üretildi (template'ten)"
+  fi
+  if [[ ! -f .agt/fixtures/policy.test.yaml ]]; then
+    fail "policy fixture üretilemedi"
+    wire_failed=1
   fi
 
   # Doğrulama zinciri
   if agt verify 2>/dev/null | grep -q "10/10"; then
     ok "OWASP ASI 2026: 10/10 (fail-closed tamam)"
   else
-    warn "agt verify 10/10 DEĞİL — governance zafiyeti var (rapor: agt verify)"
+    fail "agt verify 10/10 DEĞİL — governance zafiyeti var"
+    wire_failed=1
+  fi
+
+  if agt red-team scan AGENTS.md --min-grade C --strict >/dev/null 2>&1; then
+    ok "prompt defense: AGENTS.md minimum C"
+  else
+    fail "prompt defense: AGENTS.md minimum C değil"
+    wire_failed=1
   fi
 
   POLICY_FILE=".agt/policy.yaml"
@@ -230,17 +256,19 @@ wire_agt() {
   if agt lint-policy "$POLICY_FILE" --strict >/dev/null 2>&1; then
     ok "policy lint --strict: temiz"
   else
-    fail "policy şeması bozuk (lint-policy --strict)" ; fail_count=$((fail_count + 1))
+    fail "policy şeması bozuk (lint-policy --strict)"
+    wire_failed=1
   fi
 
   if [[ -f .agt/fixtures/policy.test.yaml ]]; then
     if agt test .agt/policy.yaml .agt/fixtures/ 2>/dev/null | grep -q "0 mismatch"; then
       ok "policy fixture replay: tümü geçti"
     else
-      warn "policy fixture mismatch — policy değiştiyse fixture'ları güncelle"
+      fail "policy fixture mismatch"
+      wire_failed=1
     fi
   fi
-  return 0
+  return "$wire_failed"
 }
 
 # ---------------------------------------------------------------------------
@@ -252,6 +280,7 @@ wire_agt() {
 wire_mcp() {
   info "MCP Security Gateway (F3)"
   MCP_OK=0
+  wire_failed=0
 
   # 1) .mcp.json üret (template'ten, varsa koru)
   if [[ ! -f .mcp.json && -f .mcp.json.template ]]; then
@@ -272,7 +301,7 @@ wire_mcp() {
 
   # 3) mcpscan — client config taraması (high+ bulgu = fail)
   if command -v npx >/dev/null 2>&1; then
-    if npx -y @nileshbera/mcpscan scan --fail-on high >/dev/null 2>&1; then
+    if npx -y @nileshbera/mcpscan scan .mcp.json --fail-on high >/dev/null 2>&1; then
       ok "mcpscan: high+ bulgu yok (client config taraması temiz)"
       MCP_OK=1
     else
@@ -289,11 +318,15 @@ wire_mcp() {
   if command -v agt >/dev/null 2>&1; then
     AGT_PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
     [[ -x "$AGT_PY" ]] || AGT_PY="$(dirname "$(command -v agt)")/python"
-    if "$AGT_PY" -m agent_os.cli.mcp_scan scan .mcp.json.template --static-only >/dev/null 2>&1; then
+    if "$AGT_PY" -m agent_os.cli.mcp_scan scan .mcp.json --static-only >/dev/null 2>&1; then
       ok "AGT mcp-scan: primitives temiz"
     else
-      warn "AGT mcp-scan uyarı verdi (primitives raporu — CI'da detay)"
+      fail "AGT mcp-scan primitives başarısız"
+      wire_failed=1
     fi
+  else
+    fail "AGT mcp-scan çalıştırılamadı"
+    wire_failed=1
   fi
 
   # 5) Supply chain manifest (bilgi amaçlı — CI blocking)
@@ -303,7 +336,8 @@ wire_mcp() {
       if [[ "$(cat .archcore/supply-chain-manifest.txt)" == "$HASH" ]]; then
         ok "supply chain: lockfile bütünlüğü doğrulandı"
       else
-        warn "supply chain: lockfile DEĞİŞMİŞ — .archcore/supply-chain-manifest.txt güncelle (yeni: $HASH)"
+        fail "supply chain: lockfile DEĞİŞMİŞ — manifest güncelle (yeni: $HASH)"
+        wire_failed=1
       fi
     else
       echo "$HASH" > .archcore/supply-chain-manifest.txt
@@ -311,8 +345,11 @@ wire_mcp() {
     fi
   fi
 
-  [[ "$MCP_OK" -eq 0 ]] && warn "NOT: mcpscan high+ bulgu/atlandı — CI mcpscan.yml durumu zorlar"
-  return 0
+  if [[ "$MCP_OK" -eq 0 ]]; then
+    fail "mcpscan high+ bulgu/atlandı"
+    wire_failed=1
+  fi
+  return "$wire_failed"
 }
 
 # ---------------------------------------------------------------------------
@@ -324,11 +361,16 @@ wire_mcp() {
 wire_mesh() {
   info "Agent Mesh + Merkle audit (F5)"
   MESH_OK=0
+  wire_failed=0
 
   # 1) .agt/manifest.yaml üret (template'ten, varsa koru)
   if [[ ! -f .agt/manifest.yaml && -f .agt/manifest.yaml.template ]]; then
     cp .agt/manifest.yaml.template .agt/manifest.yaml
     ok ".agt/manifest.yaml üretildi (template'ten)"
+  fi
+  if [[ ! -f .agt/manifest.yaml ]]; then
+    fail "agent manifest üretilemedi"
+    wire_failed=1
   fi
 
   # 2) Shadow discovery (bilgi amaçlı — strict değil; CI strict zorlar)
@@ -337,10 +379,12 @@ wire_mesh() {
       ok "shadow discovery: kayıtsız ajan yok"
       MESH_OK=1
     else
-      warn "shadow discovery uyarı verdi — ajan tanım dosyaları manifest ile eşleşmiyor (CI strict zorlar)"
+      fail "shadow discovery başarısız — manifest ile ajan tanımları eşleşmiyor"
+      wire_failed=1
     fi
   else
-    warn "manifest/python yok — shadow taraması atlandı (CI agent-mesh.yml zorlar)"
+    fail "manifest/python yok — shadow taraması çalıştırılamadı"
+    wire_failed=1
   fi
 
   # 3) Merkle audit zinciri başlat (yoksa genesis)
@@ -348,7 +392,8 @@ wire_mesh() {
     if python3 .archcore/bin/audit-chain.py --add "kurulum: setup.sh wire_mesh" >/dev/null 2>&1; then
       ok "Merkle audit zinciri başlatıldı (genesis + kurulum kaydı)"
     else
-      warn "audit-chain.py çalıştırılamadı"
+      fail "audit-chain.py çalıştırılamadı"
+      wire_failed=1
     fi
   else
     if python3 .archcore/bin/audit-chain.py --verify >/dev/null 2>&1; then
@@ -362,10 +407,11 @@ wire_mesh() {
   if uv run --with pyyaml python3 .archcore/bin/gov-dashboard.py >/dev/null 2>&1; then
     ok "governance dashboard üretildi (docs/governance-dashboard.html)"
   else
-    warn "dashboard üretilemedi (pyyaml gerekebilir)"
+    fail "dashboard üretilemedi"
+    wire_failed=1
   fi
 
-  return 0
+  return "$wire_failed"
 }
 
 # ---------------------------------------------------------------------------
@@ -385,9 +431,9 @@ wire_steiger() {
       return 1
     fi
   else
-    warn "steiger.config.js/npx yok — mimari kapı atlandı (CI arch:check zorlar)"
-    receipt_add "steiger" "?" "skip" "steiger.config.js" "npx/steiger yok"
-    return 0
+    fail "steiger.config.js/npx yok — mimari kapı çalıştırılamadı"
+    receipt_add "steiger" "?" "fail" "steiger.config.js" "npx/steiger yok"
+    return 1
   fi
 }
 
@@ -563,7 +609,9 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
   info "[dry-run] wire_steiger: npx steiger ./src + knip (arch:check)"
   receipt_add "steiger" "0.6.0" "planned" "steiger.config.js" "dry-run — kurulmayacak"
 else
-  wire_steiger
+  if ! wire_steiger; then
+    fail_count=$((fail_count + 1))
+  fi
 fi
 
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
@@ -598,16 +646,40 @@ if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
     info "branch protection kuruluyor (required checks)..."
     if $GH api "repos/$GH_USER/$PROJ_NAME/branches/main/protection" \
       -X PUT \
-      -f "required_status_checks[strict]=true" \
-      -f "required_status_checks[checks][][context]=verify" \
-      -f "required_status_checks[checks][][context]=security-sast" \
-      -f "required_status_checks[checks][][context]=security-sca" \
-      -f "required_status_checks[checks][][context]=security-container" \
-      -f "required_status_checks[checks][][context]=agent-mesh" \
-      -f "enforce_admins=true" \
-      -f "required_pull_request_reviews[required_approving_review_count]=1" \
-      -f "restrictions=null" >/dev/null 2>&1; then
-      ok "branch protection: required checks verify/security-*/agent-mesh"
+      --input - >/dev/null 2>&1 <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "lint + typecheck + test + arch (20, py3.11)",
+      "lint + typecheck + test + arch (20, py3.12)",
+      "lint + typecheck + test + arch (22, py3.11)",
+      "lint + typecheck + test + arch (22, py3.12)",
+      "OWASP ASI + policy + fixture",
+      "OWASP ASI + policy + prompt defense",
+      "midas doctor + wiring receipt",
+      "mcpscan + mcp-scan primitives",
+      "MCP server güvenlik taraması",
+      "SHA-256 manifest + OSV CVE taraması",
+      "Merkle audit + shadow discovery + trust",
+      "SAST (Semgrep, p/owasp-top-ten + p/default)",
+      "SCA (OSV-Scanner, package-lock.json)",
+      "trivy (fs · HIGH/CRITICAL)"
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": true
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+JSON
+    then
+      ok "branch protection: tüm required checks etkin"
     else
       warn "branch protection kurulamadı (pro planı gerekebilir — elle: Settings > Branches)"
     fi
@@ -644,22 +716,26 @@ if npm run arch:check >/dev/null 2>&1; then ok "arch:check YEŞİL (FSD + ölü 
 
 info "verify-drift (TTL/bayatlık taraması)"
 if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uyarı"; else
-  warn "verify-drift uyarı verdi (bilgi amaçlı, --strict değil)"; fi
+  fail "verify-drift başarısız"; fail_count=$((fail_count + 1)); fi
 
 if have midas; then
   info "Midas wiring doğrulaması"
-  if midas doctor >/dev/null 2>&1; then ok "midas doctor hazır"; else
-    warn "midas doctor uyarı verdi (ilk kurulumda store oluşmamış olabilir)"; fi
+  midas doctor 2>&1 | tee .archcore/tmp/midas-doctor.log >/dev/null || true
+  if grep -q "✗" .archcore/tmp/midas-doctor.log; then
+    fail "midas doctor gerçek hata bildirdi"; fail_count=$((fail_count + 1))
+  else
+    ok "midas doctor hazır (uyarılar CI ortamı için normal)"
+  fi
   if [[ -f .archcore/tmp/midas-receipt.json ]]; then
     ok "midas wiring receipt mevcut (.archcore/tmp/midas-receipt.json)"
   else
-    warn "midas wiring receipt yok — 'midas status --json' elle çalıştırın"; fi
+    fail "midas wiring receipt yok"; fail_count=$((fail_count + 1)); fi
 fi
 
 if have gitleaks; then
   info "gitleaks staged taraması"
   if "$(use gitleaks)" git --staged -v . >/dev/null 2>&1; then ok "secret taraması temiz"; else
-    fail "gitleaks sorun bildirdi"; fi
+    fail "gitleaks sorun bildirdi"; fail_count=$((fail_count + 1)); fi
 fi
 
 # T6.3 — setup-receipt.json üretimi (dry-run'da da üretilir, tools boş)
