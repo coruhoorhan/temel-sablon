@@ -36,6 +36,9 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
+
       # AGT kur — [full] meta-package (governance CLI + compliance modülleri)
       - name: Install AGT
         run: |
@@ -52,37 +55,26 @@ jobs:
       # 2) Policy şeması — template'ten üretilen gerçek policy'yi lint'le
       - name: Policy lint (--strict)
         run: |
-          if [ -f .agt/policy.yaml ]; then
-            agt lint-policy .agt/policy.yaml --strict || { echo "::error:: policy şeması geçersiz"; exit 1; }
-          elif [ -f .agt/policy.yaml.template ]; then
-            cp .agt/policy.yaml.template /tmp/policy.yaml
-            agt lint-policy /tmp/policy.yaml --strict || { echo "::error:: policy template şeması geçersiz"; exit 1; }
-          else
-            echo "::warning:: .agt/policy.yaml(.template) yok — policy kapısı atlandı"
-          fi
+          test -f .agt/policy.yaml || { echo "::error:: .agt/policy.yaml eksik"; exit 1; }
+          agt lint-policy .agt/policy.yaml --strict || { echo "::error:: policy şeması geçersiz"; exit 1; }
 
       # 3) Fixture replay — policy değişikliğinin davranışını doğrula (CI gate)
       - name: Policy fixture replay
         run: |
-          if [ -f .agt/policy.yaml ] && [ -f .agt/fixtures/policy.test.yaml ]; then
-            agt test .agt/policy.yaml .agt/fixtures/ || { echo "::error:: fixture mismatch"; exit 1; }
-          elif [ -f .agt/policy.yaml.template ] && [ -f .agt/fixtures/policy.test.yaml.template ]; then
-            cp .agt/policy.yaml.template /tmp/policy.yaml
-            cp .agt/fixtures/policy.test.yaml.template /tmp/fixtures.yaml
-            agt test /tmp/policy.yaml /tmp/fixtures.yaml || { echo "::error:: fixture template mismatch"; exit 1; }
-          else
-            echo "::warning:: fixture yok — fixture kapısı atlandı"
-          fi
+          test -f .agt/policy.yaml || { echo "::error:: .agt/policy.yaml eksik"; exit 1; }
+          test -f .agt/fixtures/policy.test.yaml || { echo "::error:: fixture eksik"; exit 1; }
+          agt test .agt/policy.yaml .agt/fixtures/ || { echo "::error:: fixture mismatch"; exit 1; }
 
-      # 4) Prompt defense — agent prompt'ları (AGENTS.md, verifier) minimum C notu.
-      #    TEMEL bulgusu: AGENTS.md şu an F notu — savunma dili eklendikçe bu kapı yeşile döner.
+      # 4) Prompt defense — agent prompt'ları minimum C notu.
       - name: Prompt defense scan (min C)
         run: |
           AGENTS_GRADE=$(agt red-team scan AGENTS.md 2>/dev/null | grep -oP 'Grade: \K[A-F]' | head -1)
           echo "AGENTS.md grade: ${AGENTS_GRADE:-?}"
-          # F1/F2 sırasında yeni prompt savunmaları eklendikçe eşik sıkılaştırılır;
-          # şimdilik raporla ama kırma (fail-open) — T8'de --min-grade C blocking olacak.
-          echo "::warning:: AGENTS.md prompt defense grade=${AGENTS_GRADE:-?} (T8'de blocking olacak)"
+          test -n "$AGENTS_GRADE" || { echo "::error:: prompt defense notu üretilemedi"; exit 1; }
+          case "$AGENTS_GRADE" in
+            A|B|C) ;;
+            *) echo "::error:: AGENTS.md prompt defense grade=${AGENTS_GRADE} (minimum C)"; exit 1 ;;
+          esac
 
       # 5) OWASP attestation artifact (denetim izi, R11-11)
       - name: Upload OWASP attestation

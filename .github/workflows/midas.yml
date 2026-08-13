@@ -45,7 +45,7 @@ jobs:
       - name: Install Midas
         run: |
           uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || \
-          uv tool install "midas-memory" --force
+          uv tool install "midas-memory" --with "mcp<2" --force
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Şablon config'i doğrula: .midas/config.yaml.template env'leri

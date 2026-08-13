@@ -36,13 +36,25 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Template'lerden gerçek dosyaları üret
+        run: bash .archcore/bin/ci-prepare.sh
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install AGT
+        run: |
+          uv tool install "agent-governance-toolkit[full]" --force || uv tool install "agent-governance-toolkit" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       # npm ci yerine: mcpscan npx ile çalışır; bağımlılıklar repo'da (npm ci)
       - run: npm ci --no-audit
 
       # 1) mcpscan — client config taraması (high+ = fail)
       - name: mcpscan scan (fail-on high)
         run: |
-          npx -y @nileshbera/mcpscan scan --fail-on high --osv --json > /tmp/mcpscan-report.json || {
+          npx -y @nileshbera/mcpscan scan .mcp.json --fail-on high --osv --json > /tmp/mcpscan-report.json || {
             echo "::error:: MCP güvenlik bulgusu (high+) — rapor: /tmp/mcpscan-report.json"
             exit 1
           }
@@ -53,14 +65,9 @@ jobs:
       #    inline tool tanımlarını + config metadata'sını tarar (CI güvenli).
       - name: AGT mcp-scan primitives
         run: |
-          if command -v agt >/dev/null 2>&1 || [ -f "$HOME/.local/bin/agt" ]; then
-            export PATH="$HOME/.local/bin:$PATH"
-            PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
-            "$PY" -m agent_os.cli.mcp_scan scan .mcp.json.template --static-only --format table \
-              || echo "::warning:: AGT mcp-scan uyarı verdi (primitives raporu bilgi amaçlı)"
-          else
-            echo "::warning:: AGT yok — mcp-scan atlandı (agt-verify.yml kurar)"
-          fi
+          export PATH="$HOME/.local/bin:$PATH"
+          PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
+          "$PY" -m agent_os.cli.mcp_scan scan .mcp.json --static-only --format table
 
       # 3) Artifact: mcpscan raporu (denetim izi)
       - name: Upload mcpscan report

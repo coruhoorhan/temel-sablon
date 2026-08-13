@@ -120,7 +120,7 @@ jobs:
         run: bash .archcore/bin/ci-prepare.sh
       - name: Install Midas
         run: |
-          uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || uv tool install "midas-memory" --force
+          uv tool install "midas-memory[mcp,local]" --with "mcp<2" --force || uv tool install "midas-memory" --with "mcp<2" --force
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: midas doctor
         run: |
@@ -161,12 +161,26 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Template'lerden gerçek MCP dosyasını üret
+        run: bash .archcore/bin/ci-prepare.sh
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install AGT
+        run: |
+          uv tool install "agent-governance-toolkit[full]" --force || uv tool install "agent-governance-toolkit" --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: npm ci --no-audit
       - name: mcpscan (fail-on high)
         run: |
-          npx -y @nileshbera/mcpscan scan --fail-on high --json > /tmp/mcpscan-report.json || {
+          npx -y @nileshbera/mcpscan scan .mcp.json --fail-on high --json > /tmp/mcpscan-report.json || {
             echo "::error:: MCP high+ bulgu"; exit 1; }
           echo "✓ mcpscan temiz"
+
+      - name: AGT mcp-scan primitives
+        run: |
+          PY="$HOME/.local/share/uv/tools/agent-governance-toolkit/bin/python"
+          "$PY" -m agent_os.cli.mcp_scan scan .mcp.json --static-only --format table
 
       # ---- T7.3 · Artifact: mcpscan raporu (GitHub Security tab'a SARIF
       # dönüştürülemez — JSON raporu artifact olarak yüklenir) ----

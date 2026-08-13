@@ -69,17 +69,21 @@ jobs:
           python3 - <<'PY'
           import json, urllib.request
 
-          # package-lock.json'dan bağımlılıkları çek
+          # package-lock.json'daki tüm node_modules paketlerini sorgula.
           lock = json.load(open("package-lock.json"))
-          deps = {}
-          for name, info in lock.get("packages", {}).items():
-              if name and "node_modules" not in name:
-                  deps[name.lstrip("node_modules/")] = info.get("version", "")
+          queries = []
+          for path, info in lock.get("packages", {}).items():
+              if not path.startswith("node_modules/"):
+                  continue
+              name = path.removeprefix("node_modules/")
+              version = info.get("version", "")
+              if name and version:
+                  queries.append({"package": {"name": name, "ecosystem": "npm"}, "version": version})
 
-          payload = {"package": [], "version": []}
-          for name, ver in list(deps.items())[:50]:  # OSV batch limiti
-              payload["package"].append({"name": name, "ecosystem": "npm"})
-              payload["version"].append(ver)
+          if not queries:
+              raise SystemExit("package-lock.json bağımlılık içermiyor")
+
+          payload = {"queries": queries}
 
           req = urllib.request.Request(
               "https://api.osv.dev/v1/querybatch",
@@ -93,16 +97,21 @@ jobs:
               critical_high = 0
               for v in vulns:
                   for item in v.get("vulns", []):
-                      sev = item.get("severity", [])
-                      for s in sev:
-                          if s.get("type") == "CVSS_V3" and float(s.get("score", "0")) >= 7.0:
-                              critical_high += 1
-              print(f"OSV taraması: {len(vulns)} paket sorgulandı, {critical_high} high+ CVE")
+                      severity = str(item.get("database_specific", {}).get("severity", "")).upper()
+                      scores = [
+                          float(s.get("score", "0"))
+                          for s in item.get("severity", [])
+                          if s.get("type") == "CVSS_V3"
+                      ]
+                      if severity in {"HIGH", "CRITICAL"} or any(score >= 7.0 for score in scores):
+                          critical_high += 1
+               print(f"OSV taraması: {len(queries)} paket sorgulandı, {critical_high} high+ CVE")
               if critical_high > 0:
                   raise SystemExit(1)
               print("✓ OSV: high+ CVE yok")
           except Exception as e:
-              print(f"::warning:: OSV sorgusu başarısız (ağ?) — {type(e).__name__}")
+              print(f"::error:: OSV sorgusu başarısız — {type(e).__name__}")
+              raise SystemExit(1)
           PY
 
       # 3) Artifact: bütünlük manifesti (denetim izi)

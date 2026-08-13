@@ -41,8 +41,3 @@ jobs:
           format: sarif
           output: trivy-results.sarif
           exit-code: 1
-        # Solo proje: FP gürültüsü commit'i engellemesin (risk #4, hedef <%20 FP).
-        # exit-code 1 korunur → bulgu varsa adım kırmızı görünür ama job yeşil kalır.
-        # FAZ 6: baseline + yeni-kod eşiği sonrası continue-on-error kaldırılıp
-        # gerçek kapıya çevrilir.
-        continue-on-error: true

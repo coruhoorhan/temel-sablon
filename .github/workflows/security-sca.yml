@@ -32,7 +32,6 @@ jobs:
       # Node gerekmez: osv-scanner container action — npm ci kurulumu yok.
       - name: osv-scanner (lockfile)
         if: ${{ hashFiles('package-lock.json') != '' }}
-        continue-on-error: true
         uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         env:
           GOTOOLCHAIN: auto
