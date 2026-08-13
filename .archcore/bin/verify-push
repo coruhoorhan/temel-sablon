@@ -14,7 +14,7 @@ fail_count=0
 
 check_commit() {
   local cid="$1"
-  local msg plan_id plan_file status approved_by scope_allowed
+  local msg plan_id plan_file status approved_by stored_hash scope_allowed
 
   msg="$(git log -1 --format=%B "$cid" 2>/dev/null || true)"
   plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
@@ -36,15 +36,21 @@ check_commit() {
     return 1
   fi
 
+  approved_by="$(sed -nE 's/^approved_by:[[:space:]]*(.*)/\1/p' "$plan_file" | head -n1)"
+  if [[ -z "$approved_by" ]]; then
+    echo "[plan-gate] push RED: $cid — plan '$plan_id' approved_by boş" >&2
+    return 1
+  fi
+
   body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
   stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
-  if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+  if [[ -z "$stored_hash" || "$body_hash" != "$stored_hash" ]]; then
     echo "[plan-gate] push RED: $cid — plan '$plan_id' hash kırılmış, yeniden onay gerek" >&2
     return 1
   fi
 
   # scope: allowed_paths yoksa geniş kapsam → reddet (kasıtlı güvenlik)
-  scope_allowed="$(sed -nE 's/^[[:space:]]+-[[:space:]]*([^*]*[^*])$/\1/p' "$plan_file" | head -n1)"
+  scope_allowed="$(awk '/^[[:space:]]*allowed_paths:/{active=1; next} active && /^---/{exit} active && /^[[:space:]]+-[[:space:]]*[^[:space:]]/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print}' "$plan_file")"
   if [[ -z "$scope_allowed" ]]; then
     echo "[plan-gate] push RED: $cid — plan '$plan_id' scope.allowed_paths boş (güvenlik kuralı)" >&2
     return 1

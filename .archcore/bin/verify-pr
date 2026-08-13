@@ -31,10 +31,19 @@ for cid in $REVS; do
   status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$plan_file" | head -n1)"
   [[ "$status" == "accepted" ]] || { echo "[plan-gate] CI RED: $cid — durum '$status'" >&2; fail_count=$((fail_count + 1)); continue; }
 
+  approved_by="$(sed -nE 's/^approved_by:[[:space:]]*(.*)/\1/p' "$plan_file" | head -n1)"
+  [[ -n "$approved_by" ]] || { echo "[plan-gate] CI RED: $cid — approved_by boş" >&2; fail_count=$((fail_count + 1)); continue; }
+
   body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
   stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
-  if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+  if [[ -z "$stored_hash" || "$body_hash" != "$stored_hash" ]]; then
     echo "[plan-gate] CI RED: $cid — hash kırılmış" >&2
+    fail_count=$((fail_count + 1)); continue
+  fi
+
+  allowed_paths="$(awk '/^[[:space:]]*allowed_paths:/{active=1; next} active && /^---/{exit} active && /^[[:space:]]+-[[:space:]]*[^[:space:]]/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print}' "$plan_file")"
+  if [[ -z "$allowed_paths" ]]; then
+    echo "[plan-gate] CI RED: $cid — allowed_paths boş" >&2
     fail_count=$((fail_count + 1)); continue
   fi
 
@@ -43,7 +52,7 @@ for cid in $REVS; do
     matched=0
     while IFS= read -r pat; do
       [[ "$f" == $pat ]] && { matched=1; break; }
-    done < <(sed -nE 's/^[[:space:]]+-[[:space:]]*(\S+)$/\1/p' "$plan_file")
+  done <<< "$allowed_paths"
     if [[ "$matched" -eq 0 ]]; then
       echo "[plan-gate] CI RED: $cid — '$f' plan scope'u dışında (allowed_paths kontrol et)" >&2
       fail_count=$((fail_count + 1))

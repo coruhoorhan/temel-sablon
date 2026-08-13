@@ -44,13 +44,19 @@ fi
 
 body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
 stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
-if [[ -n "$stored_hash" && "$body_hash" != "$stored_hash" ]]; then
+if [[ -z "$stored_hash" || "$body_hash" != "$stored_hash" ]]; then
   echo "[plan-gate] HATA: plan '$plan_id' onay sonrası değişmiş (hash uyuşmuyor). Yeniden onaylatın." >&2
   exit 1
 fi
 
 if [[ -z "$approved_by" ]]; then
   echo "[plan-gate] HATA: plan '$plan_id' approved_by boş — insan onayı kaydı yok." >&2
+  exit 1
+fi
+
+allowed_paths="$(awk '/^[[:space:]]*allowed_paths:/{active=1; next} active && /^---/{exit} active && /^[[:space:]]+-[[:space:]]*[^[:space:]]/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print}' "$plan_file")"
+if [[ -z "$allowed_paths" ]]; then
+  echo "[plan-gate] HATA: plan '$plan_id' allowed_paths boş." >&2
   exit 1
 fi
 
