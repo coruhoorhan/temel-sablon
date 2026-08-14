@@ -642,43 +642,53 @@ if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
 
     # T7.4 — Branch protection: main'e doğrudan push engeli + required checks
     # Required checks: verify + security-* (SAST/SCA/container) + agent-mesh.
-    # NOT: gh api ile branch protection yalnız pro planı reposunda çalışır.
+    # Solo repo tuzağı: PR yazarı kendi PR'ını onaylayamaz; required_pull_request_reviews
+    # tek kullanıcılı repoda merge'i kalıcı kilitler. Yalnız collaborator >1 ise eklenir.
     info "branch protection kuruluyor (required checks)..."
-    if $GH api "repos/$GH_USER/$PROJ_NAME/branches/main/protection" \
-      -X PUT \
-      --input - >/dev/null 2>&1 <<'JSON'
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "lint + typecheck + test + arch (20, py3.11)",
-      "lint + typecheck + test + arch (20, py3.12)",
-      "lint + typecheck + test + arch (22, py3.11)",
-      "lint + typecheck + test + arch (22, py3.12)",
-      "OWASP ASI + policy + fixture",
-      "OWASP ASI + policy + prompt defense",
-      "midas doctor + wiring receipt",
-      "mcpscan + mcp-scan primitives",
-      "MCP server güvenlik taraması",
-      "SHA-256 manifest + OSV CVE taraması",
-      "Merkle audit + shadow discovery + trust",
-      "SAST (Semgrep, p/owasp-top-ten + p/default)",
-      "SCA (OSV-Scanner, package-lock.json)",
-      "trivy (fs · HIGH/CRITICAL)"
-    ]
-  },
-  "enforce_admins": true,
-  "required_pull_request_reviews": {
-    "required_approving_review_count": 1,
-    "dismiss_stale_reviews": true
-  },
-  "restrictions": null,
-  "required_linear_history": true,
-  "allow_force_pushes": false,
-  "allow_deletions": false
+    COLLAB_COUNT=$($GH api "repos/$GH_USER/$PROJ_NAME/collaborators" --jq 'length' 2>/dev/null || echo 0)
+    if [[ "$COLLAB_COUNT" -gt 1 ]]; then
+      REVIEW_JSON='{"required_approving_review_count": 1, "dismiss_stale_reviews": true}'
+      info "çok kullanıcılı repo ($COLLAB_COUNT) — PR review şartı ekleniyor"
+    else
+      REVIEW_JSON="null"
+      info "solo repo ($COLLAB_COUNT) — PR review şartı atlandı (kendi PR'ını onaylayamazsın)"
+    fi
+    PAYLOAD=$(python3 - "$REVIEW_JSON" <<'PY'
+import json, sys
+review = json.loads(sys.argv[1]) if sys.argv[1] != "null" else None
+payload = {
+    "required_status_checks": {
+        "strict": True,
+        "contexts": [
+            "lint + typecheck + test + arch (20, py3.11)",
+            "lint + typecheck + test + arch (20, py3.12)",
+            "lint + typecheck + test + arch (22, py3.11)",
+            "lint + typecheck + test + arch (22, py3.12)",
+            "OWASP ASI + policy + fixture",
+            "OWASP ASI + policy + prompt defense",
+            "midas doctor + wiring receipt",
+            "mcpscan + mcp-scan primitives",
+            "MCP server güvenlik taraması",
+            "SHA-256 manifest + OSV CVE taraması",
+            "Merkle audit + shadow discovery + trust",
+            "SAST (Semgrep, p/owasp-top-ten + p/default)",
+            "SCA (OSV-Scanner, package-lock.json)",
+            "trivy (fs · HIGH/CRITICAL)"
+        ]
+    },
+    "enforce_admins": True,
+    "required_pull_request_reviews": review,
+    "restrictions": None,
+    "required_linear_history": True,
+    "allow_force_pushes": False,
+    "allow_deletions": False,
 }
-JSON
-    then
+print(json.dumps(payload))
+PY
+)
+    if printf '%s' "$PAYLOAD" | $GH api "repos/$GH_USER/$PROJ_NAME/branches/main/protection" \
+      -X PUT \
+      --input - >/dev/null 2>&1; then
       ok "branch protection: tüm required checks etkin"
     else
       warn "branch protection kurulamadı (pro planı gerekebilir — elle: Settings > Branches)"

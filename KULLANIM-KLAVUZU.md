@@ -230,6 +230,12 @@ MCP config taramasının başarısız olması workflow'u kırmızı yapar.
 `security-sca.yml`, `security-container.yml`, `mcpscan.yml` ve `verify.yml`
 template'ten gerçek config'leri ürettikten sonra bu config'leri tarar.
 
+Branch protection `setup.sh` tarafından şöyle kurulur: required status checks
+(zorunlu), enforce admins, linear history ve force-push/deletion yasağı her zaman
+açılır; **PR review şartı yalnız collaborator sayısı 1'den büyükse** eklenir —
+solo repoda yazar kendi PR'ını onaylayamayacağı için bu şart merge'i kalıcı
+kilitler. Collaborator eklersen review şartı otomatik devreye girer.
+
 ## 8. Yapı (hızlı referans)
 
 ```

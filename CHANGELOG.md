@@ -8,6 +8,8 @@
 - AGT prompt defense minimum C, policy ve fixture kontrolleri zorunlu hâle getirildi.
 - Plan-gate katmanları `approved_by`, `plan_hash` ve `allowed_paths` alanlarını eşit biçimde zorluyor.
 - `setup.sh` güvenlik/doğrulama hatalarını başarı olarak raporlamıyor.
+- Branch protection'da solo-repo tuzağı düzeltildi: `required_pull_request_reviews`
+  yalnız collaborator sayısı 1'den büyükse eklenir (yazar kendi PR'ını onaylayamaz).
 
 Tüm önemli değişiklikler bu dosyada. Format: [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/),
 sürümleme: [Semantic Versioning](https://semver.org/).
