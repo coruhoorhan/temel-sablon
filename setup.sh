@@ -712,7 +712,9 @@ else
   ok "plan'sız commit REDDEDİLDİ (plan-gate kapısı çalışıyor — beklenen davranış)"
   git reset >/dev/null 2>&1
 fi
-rm -rf .archcore/tmp
+# Yalnızca test artığını sil — midas receipt (.archcore/tmp/midas-receipt.json)
+# doğrulama adımında gerekli, dizini yaşat.
+rm -f "$TEST_FILE"
 
 # --- doğrulama ---
 step "DOĞRULAMA"
@@ -730,6 +732,7 @@ if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uy
 
 if have midas; then
   info "Midas wiring doğrulaması"
+  mkdir -p .archcore/tmp
   midas doctor 2>&1 | tee .archcore/tmp/midas-doctor.log >/dev/null || true
   if grep -q "✗" .archcore/tmp/midas-doctor.log; then
     fail "midas doctor gerçek hata bildirdi"; fail_count=$((fail_count + 1))
