@@ -31,6 +31,7 @@ Script soracaklarını sorar (proje adı, GitHub repo oluşturma — y/N). Kurul
 | F3 MCP | gateway config + mcpscan taraması + supply chain manifest |
 | F5 Mesh | Merkle audit zinciri + shadow discovery + dashboard |
 | F4/F6 Steiger | FSD mimari kapısı (no-upward-import) |
+| SpecBind | lifecycle (milestone/spec/tasks) + 15 skill + git adapter köprüsü |
 | Kapı testi | plansız commit'in **REDDEDİLDİĞİNİ** kanıtlar |
 | Doğrulama | `npm run verify` + `arch:check` + drift + gitleaks |
 
@@ -68,6 +69,21 @@ plan: <id>"
 ```
 
 > `plan: <id>` trailer'ı **zorunlu** — yoksa commit-msg kapısı reddeder.
+
+### SpecBind yön kuralı (milestone gereken işlerde)
+
+Küçük iş aynen yukarıdaki döngüyle gider. Milestone/release gerektiren işte:
+
+```
+1. KEŞİF  → sb-discovery (milestone + spec'ler açılır)
+2. PLAN   → sb-plan (requirements → design → contract) + sb-contract-review
+3. KÖPRÜ  → milestone'a karşılık .archcore planı açılır (status: accepted)
+4. KOD    → sb-implement / sb-drive; her checkpoint commit'e 'plan: <id>' eklenir
+5. KAPILAR → aynı kapılar (plan-gate üstündür; çakışmada plan-gate kazanır)
+```
+
+Durum: `sb-status` (milestone görünümü). "Bitti" iddiası: `sb-verify-completion`.
+Mevcut kodu spec'e bağlama: `sb-adopt` (geçici skill).
 
 ---
 

@@ -437,6 +437,32 @@ wire_steiger() {
   fi
 }
 
+wire_specbind() {
+  info "SpecBind lifecycle (milestone/spec/tasks + 15 skill)"
+  if ! have specbind; then
+    info "specbind bulunamadı — resmi installer deneniyor (SHA doğrulamalı)"
+    if curl -fsSL https://raw.githubusercontent.com/Huruikagi/specbind/main/install.sh -o /tmp/sb-install.sh 2>/dev/null; then
+      if bash /tmp/sb-install.sh --install-dir "$HOME/.local/bin" >/dev/null 2>&1; then
+        ok "specbind kuruldu ($HOME/.local/bin)"
+      else
+        return 1
+      fi
+    else
+      return 1
+    fi
+  fi
+  if [[ -f .specbind.json ]]; then
+    ok "specbind zaten kurulu (.specbind.json mevcut)"
+  else
+    if specbind install --agent generic --language en --project-instructions >/dev/null 2>&1; then
+      ok ".specbind/ + 15 skill kuruldu (generic, en)"
+    else
+      return 1
+    fi
+  fi
+  return 0
+}
+
 # --- ön koşul kontrolü ---
 step "ÖN KOŞULLAR"
 for tool in git npm node; do
@@ -612,6 +638,18 @@ else
   if ! wire_steiger; then
     fail_count=$((fail_count + 1))
   fi
+fi
+
+info "SpecBind lifecycle (spec-driven delivery)"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  info "[dry-run] wire_specbind: install.sh --install-dir + specbind install --agent generic"
+  receipt_add "specbind" "1.5.1" "planned" ".specbind.json" "dry-run — kurulmayacak"
+elif wire_specbind; then
+  ok "SpecBind kurulum + entegrasyon tamam"
+  receipt_add "specbind" "$(specbind --version 2>/dev/null || echo '1.5.1')" "ok" ".specbind.json" "milestone/spec/tasks + 15 skill"
+else
+  warn "SpecBind kurulum atlandı (offline?) — repo plan-gate ile çalışır, specbind install ile eklenir"
+  receipt_add "specbind" "?" "skipped" ".specbind.json" "kurulum atlandı"
 fi
 
 if [[ "${USE_GH_REPO:-0}" == "1" ]]; then
