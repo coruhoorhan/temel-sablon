@@ -2,10 +2,10 @@ import tseslint from 'typescript-eslint'
 import importX from 'eslint-plugin-import-x'
 import security from 'eslint-plugin-security'
 import vitestPlugin from '@vitest/eslint-plugin'
+import reactHooksPlugin from 'eslint-plugin-react-hooks'
 
 // TEMEL — ESLint 10 flat config (Bölüm 3.3 / 8.1)
-// strictTypeChecked + 2 manuel kural + max-lines 150 (muaf listesiyle)
-// Vitest anti-cheat + complexity + zero-any kuralları aktif.
+// strictTypeChecked + React Hooks + Vitest anti-cheat + complexity + zero-any kuralları aktif.
 
 export default tseslint.config(
   { ignores: ['node_modules/**', 'dist/**', 'coverage/**', '.archcore/tmp/**', 'eslint.config.mjs', '*.config.js', '*.config.ts'] },
@@ -22,6 +22,7 @@ export default tseslint.config(
     plugins: {
       'import-x': importX,
       security,
+      'react-hooks': reactHooksPlugin,
     },
     rules: {
       // ── 1. Tipler (01-tipler.rule.md) — strict'te olmayan 2 MANUEL kural + sıfır-any
@@ -33,6 +34,14 @@ export default tseslint.config(
       // ── 2. Mimari (02-mimari.rule.md) — sirküler import; FSD Steiger'da
       // (eslint-plugin-import ESLint 10'u desteklemediği için fork: import-x)
       'import-x/no-cycle': ['error', { maxDepth: 10 }],
+
+      // ── 3. State ve React Hooks Disiplini (03-state.rule.md)
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/set-state-in-render': 'error',
+      'react-hooks/immutability': 'error',
+      'react-hooks/purity': 'error',
 
       // ── 3. Karmaşıklık ve Spagetti Engeli — Max 10 complexity, max 3 params
       'complexity': ['error', { max: 10 }],
