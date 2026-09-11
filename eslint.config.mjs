@@ -53,7 +53,7 @@ export default tseslint.config(
     rules: { 'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }] },
   },
   {
-    files: ['**/*.machine.ts', '**/reducer.ts', '**/reducers/**'],
+    files: ['**/*.machine.ts', '**/reducer.ts', '**/*reducer.ts'],
     rules: { 'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }] },
   },
 

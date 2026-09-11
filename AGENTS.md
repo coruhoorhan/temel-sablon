@@ -97,11 +97,13 @@ Validate and sanitize input, including SQL, XSS, injection, script, HTML, specia
 ## Kapılar (KATMAN 2 — zorlama)
 | Katman | Nerede | Ne yapar |
 |---|---|---|
-| commit-msg hook | `.archcore/bin/verify-commit-msg` | `plan: <id>` + accepted + hash |
-| pre-push hook | `.archcore/bin/verify-push` | itilen commit'ler plan referanslı + kapsam |
-| drift/TTL kapısı | `.archcore/bin/verify-drift` (FAZ 4 — başka ajan yazıyor) | TTL eşikleri (30g drift/90g yaş), çift yönlü supersession, bayatlık sinyali |
-| CI | `.github/workflows/*` (FAZ 2) | lint+tsc+test+coverage, güvenlik taramaları |
-| Ruleset | GitHub (FAZ 2) | force-push/silme blok, imzalı commit |
+| pre-commit hook | Lefthook | format + gitleaks + verify-tdd-impact + eslint (max-lines 150) + steiger fast-arch |
+| commit-msg hook | `.archcore/bin/verify-commit-msg` | `plan: <id>` + accepted + hash + staged scope (`allowed_paths`) |
+| post-commit hook | `.archcore/bin/verify-post-commit` | `--no-verify` anti-bypass (kuralsız commit'i anında geri alır) |
+| pre-push hook | `.archcore/bin/verify-push` | itilen commit'ler plan referanslı + kapsam (`allowed_paths`) + `arch:check` |
+| drift/TTL kapısı | `.archcore/bin/verify-drift` | TTL eşikleri (30g drift/90g yaş), bayatlık sinyali |
+| CI | `.github/workflows/*` | typecheck+lint+test+coverage, FSD+Knip, verify-pr, güvenlik taramaları |
+| Ruleset | GitHub | force-push/silme blok, imzalı commit |
 | Verifier ajanı | `.opencode/agents/verifier.md` | diff ≤300 satır → LLM denetimi (BLOCK: critical+conf≥0.7) |
 
 ## Komutlar

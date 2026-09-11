@@ -48,11 +48,18 @@ for cid in $REVS; do
   fi
 
   # scope kontrolü: plan dışı dosya değişikliği var mı?
+  shopt -s globstar nullglob extglob
   while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
     matched=0
     while IFS= read -r pat; do
-      [[ "$f" == $pat ]] && { matched=1; break; }
-  done <<< "$allowed_paths"
+      [[ -z "$pat" ]] && continue
+      pat="$(echo "$pat" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//" -e "s/^[\"\x27]//" -e "s/[\"\x27]$//")"
+      if [[ "$f" == $pat ]]; then
+        matched=1
+        break
+      fi
+    done <<< "$allowed_paths"
     if [[ "$matched" -eq 0 ]]; then
       echo "[plan-gate] CI RED: $cid — '$f' plan scope'u dışında (allowed_paths kontrol et)" >&2
       fail_count=$((fail_count + 1))

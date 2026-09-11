@@ -29,6 +29,9 @@ pre-commit:
       run: git diff --cached --name-only | bash .archcore/bin/verify-tdd-impact.sh --stdin
     - name: quick-lint
       run: npx eslint {staged_files}
+    - name: fast-arch
+      # FSD mimari ihlalleri commit anında engellenir (Steiger)
+      run: npx steiger ./src
     - name: llm-verify
       run: bash .archcore/bin/llm-verify.sh {staged_files}
       skip:
@@ -52,6 +55,9 @@ pre-push:
       run: npm run typecheck
     - name: full-lint
       run: npm run lint
+    - name: arch-check
+      # Steiger FSD ve Knip ölü kod denetimi push öncesi zorunludur
+      run: npm run arch:check
     - name: tests
       run: npm test
     # ---- AGT (F2 · T2.5): policy + prompt defense push öncesi ----
@@ -92,3 +98,13 @@ commit-msg:
       run: .archcore/bin/verify-commit-msg {1}
     - name: commitlint
       run: npx commitlint --edit {1}
+
+# ---- post-commit: anti-bypass kapısı ----
+# Amaç: 'git commit --no-verify' ile atlanan kapıları HEAD üzerinde yakalar;
+# geçersiz commit'i anında 'git reset --soft HEAD~1' ile geri alır.
+post-commit:
+  parallel: false
+  jobs:
+    - name: anti-bypass
+      run: bash .archcore/bin/verify-post-commit
+

@@ -20,8 +20,14 @@ src_hit=0
 test_hit=0
 for f in "${files[@]}"; do
   case "$f" in
-    src/*.test.*|src/**/*.test.*|src/**/__tests__/*) test_hit=1 ;;
-    src/*) src_hit=1 ;;
+    src/*.test.*|src/**/*.test.*|src/*.spec.*|src/**/*.spec.*|src/**/__tests__/*|test/*|test/**/*|tests/*|tests/**/*)
+      test_hit=1
+      ;;
+    src/**/*.d.ts|src/*.d.ts)
+      ;;
+    src/*.ts|src/**/*.ts|src/*.tsx|src/**/*.tsx|src/*.js|src/**/*.js|src/*.jsx|src/**/*.jsx)
+      src_hit=1
+      ;;
   esac
 done
 

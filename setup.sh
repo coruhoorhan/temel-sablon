@@ -582,7 +582,7 @@ fi
 
 info "hooks:install (lefthook kapıları)"
 if npm run hooks:install >/dev/null 2>&1 || npm.cmd run hooks:install >/dev/null 2>&1; then
-  ok "lefthook kapıları kuruldu (pre-commit, commit-msg, pre-push)"
+  ok "lefthook kapıları kuruldu (pre-commit, commit-msg, pre-push, post-commit)"
 else
   fail "hooks:install BAŞARISIZ (npm approve-scripts lefthook gerekebilir)"; fail_count=$((fail_count + 1))
 fi
@@ -743,19 +743,32 @@ PY
 fi
 
 # --- test: kapı kanıtı ---
-step "KAPI TESTİ (plan-gate)"
+step "KAPI TESTİ (plan-gate + anti-bypass)"
 TEST_FILE=".archcore/tmp/setup-test.txt"
 mkdir -p .archcore/tmp
 echo "setup.sh test işareti" > "$TEST_FILE"
-git add "$TEST_FILE" >/dev/null 2>&1
+git add -f "$TEST_FILE" >/dev/null 2>&1
 if git commit -m "test: plansiz commit denemesi" >/dev/null 2>&1; then
   warn "PLAN'SIZ COMMIT GEÇTİ?! plan-gate çalışmıyor — lefthook kurulumunu kontrol et"
   fail_count=$((fail_count + 1))
   git reset --soft HEAD~1 >/dev/null 2>&1
 else
-  ok "plan'sız commit REDDEDİLDİ (plan-gate kapısı çalışıyor — beklenen davranış)"
+  ok "plan'sız commit REDDEDİLDİ (commit-msg plan-gate kapısı çalışıyor)"
   git reset >/dev/null 2>&1
 fi
+
+# Anti-bypass testi: --no-verify denemesi post-commit tarafından yakalanıp geri alınmalı
+git add -f "$TEST_FILE" >/dev/null 2>&1
+git commit --no-verify -m "test: no-verify bypass denemesi" >/dev/null 2>&1 || true
+if git log -1 --format=%B 2>/dev/null | grep -q "no-verify bypass denemesi"; then
+  warn "NO-VERIFY BYPASS GEÇTİ?! post-commit anti-bypass çalışmıyor"
+  fail_count=$((fail_count + 1))
+  git reset --soft HEAD~1 >/dev/null 2>&1
+else
+  ok "no-verify bypass REDDEDİLDİ VE GERİ ALINDI (post-commit anti-bypass çalışıyor)"
+fi
+git reset >/dev/null 2>&1
+
 # Yalnızca test artığını sil — midas receipt (.archcore/tmp/midas-receipt.json)
 # doğrulama adımında gerekli, dizini yaşat.
 rm -f "$TEST_FILE"
