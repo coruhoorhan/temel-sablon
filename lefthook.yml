@@ -27,6 +27,9 @@ pre-commit:
     - name: tdd-impact
       # R8 kaba kapısı: src üretim dosyasına dokunan commit test de getirmeli.
       run: git diff --cached --name-only | bash .archcore/bin/verify-tdd-impact.sh --stdin
+    - name: qa-evidence
+      # Victor Falcon qa-change kaba kapısı: UI değişikliği E2E/bileşen testi ya da görsel kanıt getirmeli.
+      run: git diff --cached --name-only | bash .archcore/bin/verify-qa-evidence.sh --stdin
     - name: quick-lint
       run: npx eslint {staged_files}
     - name: fast-arch

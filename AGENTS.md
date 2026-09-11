@@ -97,10 +97,12 @@ Validate and sanitize input, including SQL, XSS, injection, script, HTML, specia
 ## Kapılar (KATMAN 2 — zorlama)
 | Katman | Nerede | Ne yapar |
 |---|---|---|
-| pre-commit hook | Lefthook | format + gitleaks + verify-tdd-impact + eslint (max-lines 150) + steiger fast-arch |
+| pre-commit hook | Lefthook | format + gitleaks + verify-tdd-impact + verify-qa-evidence + eslint (max-lines 150, UI saflık) + steiger fast-arch |
 | commit-msg hook | `.archcore/bin/verify-commit-msg` | `plan: <id>` + accepted + hash + staged scope (`allowed_paths`) |
 | post-commit hook | `.archcore/bin/verify-post-commit` | `--no-verify` anti-bypass (kuralsız commit'i anında geri alır) |
-| pre-push hook | `.archcore/bin/verify-push` | itilen commit'ler plan referanslı + kapsam (`allowed_paths`) + `arch:check` |
+| pre-push hook | `.archcore/bin/verify-push` | itilen commit'ler plan referanslı + kapsam (`allowed_paths`) + `arch:check` + coverage |
+| QA & Görsel Kanıt | `.archcore/bin/verify-qa-evidence.sh` | UI değişikliğinde E2E testi veya `.scratch/qa/` görsel kanıtı (video/screenshot) zorunlu |
+| CI Dadılığı & Teslimat | `ship` + `pr-ci` | PR açma, görsel kanıt iliştirme ve yeşil olana kadar CI log takibi/otonom tamir |
 | drift/TTL kapısı | `.archcore/bin/verify-drift` | TTL eşikleri (30g drift/90g yaş), bayatlık sinyali |
 | CI | `.github/workflows/*` | typecheck+lint+test+coverage, FSD+Knip, verify-pr, güvenlik taramaları |
 | Ruleset | GitHub | force-push/silme blok, imzalı commit |

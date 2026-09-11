@@ -64,6 +64,26 @@ export default tseslint.config(
     },
   },
 
+  // ── Next.js App Router Sayfa İnce Kabuk Kuralı (max 75 satır; sayfa monolit olamaz, widgets/features kullanmalı)
+  {
+    files: ['src/app/**/page.{ts,tsx}', 'src/pages/**/page.{ts,tsx}'],
+    rules: { 'max-lines': ['error', { max: 75, skipBlankLines: true, skipComments: true }] },
+  },
+
+  // ── FSD UI Katmanı Saflık Kuralı: UI içinde doğrudan global fetch yasak (model/ veya api/ kullanılmalı)
+  {
+    files: ['src/**/ui/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message: 'UI bileşenleri doğrudan fetch yapamaz; model/ veya api/ katmanındaki kancaları (hooks) veya servisleri kullanın.',
+        },
+      ],
+    },
+  },
+
   // ── 150 satır muaf listesi (R9-01): test/stories/fixtures/mocks + machine/reducer
   {
     files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', '**/__tests__/**', '**/*.stories.{ts,tsx}', '**/fixtures/**', '**/mocks/**'],

@@ -784,6 +784,13 @@ info "npm run arch:check (steiger + knip)"
 if npm run arch:check >/dev/null 2>&1; then ok "arch:check YEŞİL (FSD + ölü kod)"; else
   fail "arch:check kırmızı — FSD ihlali veya ölü kod"; fail_count=$((fail_count + 1)); fi
 
+info "verify-qa-evidence (Victor Falcon QA mekanik kapısı)"
+if printf "src/features/dummy/ui/Dummy.tsx\n" | bash .archcore/bin/verify-qa-evidence.sh --stdin >/dev/null 2>&1; then
+  fail "verify-qa-evidence sahte UI geçişine izin verdi"; fail_count=$((fail_count + 1))
+else
+  ok "verify-qa-evidence YEŞİL (kanıtsız UI mekanik olarak engelleniyor)"
+fi
+
 info "verify-drift (TTL/bayatlık taraması)"
 if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uyarı"; else
   fail "verify-drift başarısız"; fail_count=$((fail_count + 1)); fi
