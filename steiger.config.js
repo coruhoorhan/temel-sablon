@@ -13,6 +13,7 @@ export default defineConfig([
     ignores: ['**/__mocks__/**', '**/fixtures/**', '**/dist/**'],
     rules: {
       'no-upward-import': 'error',
+      'fsd-layers-only': 'error',
     },
   },
   // Örnek: shared/ui public-api muafiyeti gerekirse açılır

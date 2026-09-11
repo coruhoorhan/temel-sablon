@@ -1,4 +1,5 @@
 ---
+title: "kurulum-scripti — İnteraktif setup.sh (kullanıcı kendi başına kurulum)"
 id: kurulum-scripti
 status: accepted
 created: 2026-08-02
@@ -6,7 +7,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:53:50Z
 last_review_date: 2026-08-02T11:53:50Z
 ttl_days: 90
-plan_hash: 441033ab2255461617a40165da45051b1184da31c84ef1f38f86b337a31b1298
+plan_hash: 6177b65a5d6ba700cd89215e5de810b5d6207da6c24faec4b0482176bf4465ae
 scope:
   allowed_paths:
     - setup.sh

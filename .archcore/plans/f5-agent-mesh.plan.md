@@ -1,8 +1,9 @@
 ---
+title: "Plan: f5-agent-mesh"
 description: F5 (Agent Mesh) — DID/trust mesh + Merkle audit + shadow AI discovery + dashboard
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 2508754392accd40cdaa35899cf422a50669cb4888a3d4ec8097e321df9cd4af
+plan_hash: 3a45749cd8b8b0f7671234c3a7673aef83c6ac437af4d57918ab77357269d7f5
 last_approved: 2026-08-10T05:44:06Z
 last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90

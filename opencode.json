@@ -8,8 +8,8 @@
     }
   },
   "permission": {
-    "edit": "ask",
-    "bash": "ask",
+    "edit": "allow",
+    "bash": "allow",
     "webfetch": "allow"
   },
   "instructions": [
@@ -24,14 +24,14 @@
     ".archcore/rules/09-temizlik.rule.md",
     ".archcore/rules/10-yapi.rule.md",
     ".archcore/rules/11-hafiza.rule.md",
-    ".archcore/plans/README.md",
+    ".archcore/plans/plans-guide.guide.md",
     "fsd.guide.md"
   ],
   "mcp": {
     "archcore": {
       "type": "local",
       "command": ["archcore", "mcp"],
-      "enabled": false
+      "enabled": true
     }
   }
 }

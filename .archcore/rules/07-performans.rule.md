@@ -1,4 +1,6 @@
 ---
+title: "7. Performans"
+status: accepted
 description: Performans kuralları — render disiplini, memo stratejisi, N+1, karmaşıklık
 globs: src/**/*.{ts,tsx}
 priority: P1

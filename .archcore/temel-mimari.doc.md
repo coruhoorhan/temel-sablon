@@ -1,7 +1,12 @@
+---
+title: "TEMEL Mimarisi v2.0.0"
+status: accepted
+---
+
 # TEMEL Mimarisi (v2.0.0)
 
 > Bu doküman şablonun sistem mimarisini açıklar: katmanlar, kapılar ve veri akışı.
-> `setup.sh` bu dosyayı yeni projeye `.archcore/TEMEL-MIMARI.md` olarak kopyalar.
+> `setup.sh` bu dosyayı yeni projeye `.archcore/temel-mimari.doc.md` olarak kopyalar.
 
 ## 1. Genel Bakış
 

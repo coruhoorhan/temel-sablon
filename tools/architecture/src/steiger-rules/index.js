@@ -21,34 +21,46 @@ const LAYER_ORDER = ['shared', 'entities', 'features', 'widgets', 'pages', 'app'
  * @returns {string | null}
  */
 function layerOf(path) {
-  const match = /\/src\/([^/]+)\//.exec(path)
+  const match = /(?:^|\/)src\/([^/]+)\//.exec(path)
   if (!match) return null
   const layer = match[1]
   return LAYER_ORDER.includes(layer) ? layer : null
 }
 
 /**
- * Dosyadaki import kaynaklarını topla (basit regex — relative + alias).
+ * Dosyadaki import ve export kaynaklarını topla (relative + alias + dynamic).
  * @param {SteigerFile} file
  * @returns {string[]}
  */
 function importsOf(file) {
   const content = file.content ?? ''
   const sources = []
-  const re = /from\s+['"]([^'"]+)['"]/g
+  const re = /(?:from\s+|import\s*\(?\s*|export\s+(?:\*|\{[^}]*\})\s+from\s+)['"]([^'"]+)['"]/g
   let m
   while ((m = re.exec(content)) !== null) sources.push(m[1])
   return sources
 }
 
 /**
- * Import kaynağını dosya yoluna çöz (basit relative resolution).
+ * Import kaynağını dosya yoluna çöz (relative + @/ + ~/ alias).
  * @param {string} fromFile
  * @param {string} importSrc
  * @returns {string}
  */
 function resolveTarget(fromFile, importSrc) {
-  if (importSrc.startsWith('src/')) return importSrc
+  const srcIdx = fromFile.indexOf('/src/')
+  const prefix = srcIdx !== -1 ? fromFile.slice(0, srcIdx) : ''
+
+  if (importSrc.startsWith('@/')) {
+    return `${prefix}/src/${importSrc.slice(2)}`
+  }
+  if (importSrc.startsWith('~/')) {
+    return `${prefix}/src/${importSrc.slice(2)}`
+  }
+  if (importSrc.startsWith('src/')) {
+    return `${prefix}/${importSrc}`
+  }
+
   const dir = fromFile.split('/').slice(0, -1)
   const parts = importSrc.split('/')
   const stack = [...dir]
@@ -85,7 +97,15 @@ export function createArchitecturePlugin() {
               if (!fromLayer) return
 
               for (const src of importsOf(node)) {
-                if (!src.startsWith('./') && !src.startsWith('../') && !src.startsWith('src/')) continue
+                if (
+                  !src.startsWith('./') &&
+                  !src.startsWith('../') &&
+                  !src.startsWith('src/') &&
+                  !src.startsWith('@/') &&
+                  !src.startsWith('~/')
+                ) {
+                  continue
+                }
                 const targetPath = resolveTarget(node.path, src)
                 const toLayer = layerOf(targetPath)
                 if (!toLayer) continue
@@ -108,6 +128,33 @@ export function createArchitecturePlugin() {
           }
 
           walk(root)
+          return { diagnostics }
+        },
+      },
+      {
+        name: 'fsd-layers-only',
+        check(root) {
+          /** @type {SteigerDiagnostic[]} */
+          const diagnostics = []
+          const allowedLayers = new Set(LAYER_ORDER)
+
+          if (root.type === 'folder') {
+            for (const child of root.children) {
+              if (child.type === 'folder') {
+                const folderName = child.path.split('/').filter(Boolean).pop()
+                if (folderName && !allowedLayers.has(folderName)) {
+                  diagnostics.push({
+                    message:
+                      `FSD ihlali (temel/fsd-layers-only): 'src/${folderName}' geçerli bir FSD katmanı değildir. ` +
+                      `Yalnızca standart FSD katmanları izinlidir: ${LAYER_ORDER.join(', ')}. ` +
+                      `Bileşenler ve mantık 'src/components/' gibi düz klasörlere değil; 'shared/', 'entities/', 'features/', 'widgets/' veya 'pages/' altında dilimlenmelidir.`,
+                    location: { path: child.path },
+                  })
+                }
+              }
+            }
+          }
+
           return { diagnostics }
         },
       },

@@ -1,4 +1,6 @@
 ---
+title: "4. Güvenlik"
+status: accepted
 description: Güvenlik kuralları — XSS, injection, secret, auth/IDOR, OWASP Agentic
 globs: src/**/*.{ts,tsx}
 priority: P0

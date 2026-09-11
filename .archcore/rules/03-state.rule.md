@@ -1,4 +1,6 @@
 ---
+title: "3. State"
+status: accepted
 description: State yönetimi kuralları — React hooks disiplini, store deseni, immutable güncelleme
 globs: src/**/*.{ts,tsx}
 priority: P0

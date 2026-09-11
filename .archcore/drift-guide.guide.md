@@ -1,3 +1,8 @@
+---
+title: "Drift TTL Şema ve Otomasyon"
+status: accepted
+---
+
 # Drift / TTL — Şema ve Otomasyon
 
 > Bölüm 8.3 madde 6 (TTL kontratı) + madde 14 (yaşlanma = arşivleme, silme değil) uygulaması.

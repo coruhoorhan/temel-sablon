@@ -1,4 +1,6 @@
 ---
+title: "9. Temizlik"
+status: accepted
 description: Temizlik kuralları — format, dosya boyutu, commit disiplini, ölü kod, TODO yasağı
 globs: src/**/*.{ts,tsx}
 priority: P1

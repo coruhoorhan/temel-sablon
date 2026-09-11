@@ -29,6 +29,7 @@ npm-debug.log*
 .vscode/
 .idea/
 .DS_Store
+.omo/
 
 # Tooling
 .archcore/tmp/
@@ -59,3 +60,7 @@ docs/governance-dashboard.html
 
 # setup.sh v2 — kurulum receipt (otomatik üretilir, F6)
 setup-receipt.json
+
+# Scratch & QA kanıtları — görsel kanıtlar ve geçici raporlar repo dışı tutulur
+.scratch/
+playwright-report/

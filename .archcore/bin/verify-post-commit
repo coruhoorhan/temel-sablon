@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# verify-post-commit — Anti-Bypass Mekanik Kapısı
+# 'git commit --no-verify' veya hook atlama girişimlerini yakalar.
+# HEAD commit geçerli bir plan, onay ve scope içermiyorsa,
+# commit'i otomatik olarak geri alır (git reset --soft HEAD~1),
+# böylece izinsiz veya kuralsız commit depoda BARINAMAZ.
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+PLANS_DIR="$ROOT/.archcore/plans"
+
+rollback_commit() {
+  local reason="$1"
+  echo "" >&2
+  echo "======================================================================" >&2
+  echo "[ANTI-BYPASS] HATA: $reason" >&2
+  echo "[ANTI-BYPASS] Kurallar gereği bu commit GERİ ALINIYOR (iptal edildi)." >&2
+  echo "[ANTI-BYPASS] Kod değişiklikleriniz kaybolmadı (staged olarak korundu)." >&2
+  echo "======================================================================" >&2
+  
+  if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+    git reset --soft HEAD~1 >/dev/null 2>&1 || true
+  else
+    git update-ref -d HEAD >/dev/null 2>&1 || true
+  fi
+  exit 1
+}
+
+# 1. HEAD commit mesajını al
+msg="$(git log -1 --format=%B HEAD 2>/dev/null || true)"
+[[ -z "$msg" ]] && exit 0
+
+# 2. plan: <id> trailer'ını kontrol et
+plan_id="$(printf '%s' "$msg" | sed -nE 's/^plan:[[:space:]]*([a-z0-9-]+)[[:space:]]*$/\1/p' | head -n1)"
+if [[ -z "$plan_id" ]]; then
+  rollback_commit "Commit mesajında 'plan: <id>' trailer'ı bulunamadı (--no-verify ile mi atıldı?)."
+fi
+
+plan_file="$PLANS_DIR/$plan_id.plan.md"
+if [[ ! -f "$plan_file" ]]; then
+  rollback_commit "Plan dosyası ($plan_file) bulunamadı."
+fi
+
+# 3. Plan statüsü ve hash kontrolü
+status="$(sed -nE 's/^status:[[:space:]]*([a-z_]+).*/\1/p' "$plan_file" | head -n1)"
+if [[ "$status" != "accepted" ]]; then
+  rollback_commit "Plan '$plan_id' durumu '$status' (accepted değil)."
+fi
+
+body_hash="$(sed '/^plan_hash:/d' "$plan_file" | sha256sum | cut -d' ' -f1)"
+stored_hash="$(sed -nE 's/^plan_hash:[[:space:]]*([0-9a-f]+).*/\1/p' "$plan_file" | head -n1)"
+if [[ -z "$stored_hash" || "$body_hash" != "$stored_hash" ]]; then
+  rollback_commit "Plan '$plan_id' hash uyuşmazlığı (onay sonrası plan değiştirilmiş)."
+fi
+
+# 4. Scope ve Güvenlik kontrolü (allowed_paths + secret engeli)
+scope_allowed="$(awk '/^[[:space:]]*allowed_paths:/{active=1; next} active && /^---/{exit} active && /^[[:space:]]+-[[:space:]]*[^[:space:]]/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print}' "$plan_file")"
+if [[ -z "$scope_allowed" ]]; then
+  rollback_commit "Plan '$plan_id' içinde allowed_paths tanımlı değil."
+fi
+
+shopt -s globstar nullglob extglob
+while IFS= read -r f; do
+  [[ -z "$f" ]] && continue
+  # Secret dosyaların commit edilmesini kesin engelle
+  if echo "$f" | grep -qE "(^|/)(\.env(\..+)?|.*\.pem|.*\.key|.*\.secret)$"; then
+    rollback_commit "Secret/env dosyası ($f) commit edilemez!"
+  fi
+
+  matched=0
+  while IFS= read -r pat; do
+    [[ -z "$pat" ]] && continue
+    pat="$(echo "$pat" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//" -e "s/^[\"\x27]//" -e "s/[\"\x27]$//")"
+    if [[ "$f" == $pat ]]; then
+      matched=1
+      break
+    fi
+  done <<< "$scope_allowed"
+  if [[ "$matched" -eq 0 ]]; then
+    rollback_commit "'$f' dosyası plan scope'u dışında (allowed_paths ihlali)."
+  fi
+done < <(git diff-tree --no-commit-id --name-only -r HEAD)
+
+# 5. Doğrudan main/master dalına commit engeli
+current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
+  if [[ "${ALLOW_MAIN_COMMIT:-0}" != "1" ]]; then
+    rollback_commit "'$current_branch' dalına doğrudan commit atılamaz. Çalışma dalı açılmalıdır (git checkout -b feat/<ad>)."
+  fi
+fi
+
+echo "[ANTI-BYPASS] OK: HEAD commit ($plan_id) tüm mekanik kontrollerden geçti."
+exit 0

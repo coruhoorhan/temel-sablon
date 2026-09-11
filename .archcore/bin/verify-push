@@ -56,6 +56,25 @@ check_commit() {
     return 1
   fi
 
+  # scope kontrolü: commit'in dokunduğu dosyaları denetle
+  shopt -s globstar nullglob extglob
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    matched=0
+    while IFS= read -r pat; do
+      [[ -z "$pat" ]] && continue
+      pat="$(echo "$pat" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//" -e "s/^[\"\x27]//" -e "s/[\"\x27]$//")"
+      if [[ "$f" == $pat ]]; then
+        matched=1
+        break
+      fi
+    done <<< "$scope_allowed"
+    if [[ "$matched" -eq 0 ]]; then
+      echo "[plan-gate] push RED: $cid — '$f' plan scope'u dışında (allowed_paths ihlali)" >&2
+      return 1
+    fi
+  done < <(git diff-tree --no-commit-id --name-only -r "$cid")
+
   echo "[plan-gate] push OK: $cid → plan '$plan_id'"
   return 0
 }

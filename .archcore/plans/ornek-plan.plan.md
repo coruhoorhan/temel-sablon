@@ -1,4 +1,5 @@
 ---
+title: "ornek-plan — Örnek Plan"
 id: ornek-plan
 status: draft
 created: 2026-08-02

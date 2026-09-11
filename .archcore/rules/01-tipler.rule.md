@@ -1,4 +1,6 @@
 ---
+title: "1. Tipler"
+status: accepted
 description: Tip güvenliği kuralları — strictTypeChecked ailesi + manuel tip kuralları
 globs: src/**/*.{ts,tsx}
 priority: P0

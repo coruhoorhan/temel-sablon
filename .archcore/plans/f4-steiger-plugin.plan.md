@@ -1,8 +1,9 @@
 ---
+title: "Plan: f4-steiger-plugin"
 description: F4 (Steiger Custom FSD Plugin) — katman sızıntısı zorlaması
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 6b95bc5a39c7084e0595a680596e56efe0bd771346dd2ced6a37a3eee0a3ffda
+plan_hash: df659e55d4dd636b106fefdd98732db5dcb75e88a618dece9a5de6ebcfbd5318
 last_approved: 2026-08-10T05:44:06Z
 last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90

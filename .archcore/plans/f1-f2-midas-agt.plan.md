@@ -1,8 +1,9 @@
 ---
+title: "Plan: f1-f2-midas-agt"
 description: F1 (Midas hafıza) + F2 (AGT governance) entegrasyonu — şablona hafıza ve OWASP ASI katmanları eklenir
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 019fd12958c5210ee985e21604f02f3ca76326b8fb6a9ced653615fd149cf527
+plan_hash: f717f94902b09963ea28ab1cb407993b66a94934395366c29c4c044a4f871ca1
 last_approved: 2026-08-10T05:44:06Z
 last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90

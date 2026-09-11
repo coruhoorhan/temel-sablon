@@ -19,13 +19,22 @@ pre-commit:
       stage_fixed: true
     - name: secrets
       # gitleaks SİSTEM aracıdır (devDependency DEĞİL): npm'de resmi paketi yok,
-      # "gitleaks" adlı npm paketi sahte/şüpheli (#16). Kur: apt/brew install gitleaks
+      # "gitleaks" adlı npm paketi SAHTEDİR, kurma (#16). Kur: apt/brew install gitleaks
       # veya: go install github.com/gitleaks/gitleaks/v8@latest
       # v8.30+: `detect --staged` KALDIRILDI → `git --staged` (staged diff tarar;
       # `git --pre-commit` ilk commit öncesi 0 commit tarar, pre-commit hook'u için değil)
       run: gitleaks git --staged -v .
+    - name: tdd-impact
+      # R8 kaba kapısı: src üretim dosyasına dokunan commit test de getirmeli.
+      run: git diff --cached --name-only | bash .archcore/bin/verify-tdd-impact.sh --stdin
+    - name: qa-evidence
+      # Victor Falcon qa-change kaba kapısı: UI değişikliği E2E/bileşen testi ya da görsel kanıt getirmeli.
+      run: git diff --cached --name-only | bash .archcore/bin/verify-qa-evidence.sh --stdin
     - name: quick-lint
       run: npx eslint {staged_files}
+    - name: fast-arch
+      # FSD mimari ihlalleri commit anında engellenir (Steiger)
+      run: npx steiger ./src
     - name: llm-verify
       run: bash .archcore/bin/llm-verify.sh {staged_files}
       skip:
@@ -49,8 +58,12 @@ pre-push:
       run: npm run typecheck
     - name: full-lint
       run: npm run lint
+    - name: arch-check
+      # Steiger FSD ve Knip ölü kod denetimi push öncesi zorunludur
+      run: npm run arch:check
     - name: tests
-      run: npm test
+      # Vitest testleri ve %80 coverage eşik denetimi zorunludur
+      run: npm run coverage
     # ---- AGT (F2 · T2.5): policy + prompt defense push öncesi ----
     # Fail-open (bilgi amaçlı): agt yoksa push engellenmez — CI (K3) zorlar.
     # Policy template'ten üretilen gerçek dosyayı lint'ler; şema bozuksa uyarır.
@@ -89,3 +102,13 @@ commit-msg:
       run: .archcore/bin/verify-commit-msg {1}
     - name: commitlint
       run: npx commitlint --edit {1}
+
+# ---- post-commit: anti-bypass kapısı ----
+# Amaç: 'git commit --no-verify' ile atlanan kapıları HEAD üzerinde yakalar;
+# geçersiz commit'i anında 'git reset --soft HEAD~1' ile geri alır.
+post-commit:
+  parallel: false
+  jobs:
+    - name: anti-bypass
+      run: bash .archcore/bin/verify-post-commit
+

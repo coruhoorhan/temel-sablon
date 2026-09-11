@@ -1,8 +1,9 @@
 ---
+title: "Plan: f3-mcp-security"
 description: F3 (MCP Security Gateway + MCPScan + supply chain) — MCP server güvenliği katmanı
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: d98666fb7914f9d97b39c92c76ee6ceed688c226cea8f4b70948f2b7f1723fa3
+plan_hash: 3058c62b5f8a1ab0f9719e09021e5cf7e4c3eacc604a66222b6e47ba2e45654d
 last_approved: 2026-08-10T05:44:06Z
 last_review_date: 2026-08-10T05:44:06Z
 ttl_days: 90

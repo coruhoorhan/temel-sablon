@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "specDir": ".specbind",
+  "language": "en",
+  "agents": ["generic"],
+  "projectInstructions": true
+}

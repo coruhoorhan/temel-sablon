@@ -1,4 +1,6 @@
 ---
+title: "2. Mimari (FSD)"
+status: accepted
 description: FSD mimari kuralları — katman hiyerarşisi, import sınırları, public API
 globs: src/**
 priority: P0
