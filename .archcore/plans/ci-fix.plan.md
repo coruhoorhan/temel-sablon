@@ -1,8 +1,9 @@
 ---
+title: "Plan: ci-fix"
 description: CI kırmızı fix — template üretimi + Node 20 steiger uyumluluğu (verify/agent-mesh/midas)
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 83818253d1605e8a411e7f7489dc7adc676e35c94a30f5131d4ae82b05df2d06
+plan_hash: 22b678a16fb3c52c4116c5541a9a3a345a5d56ae27faf1c09386050858403c24
 last_approved: 2026-08-10T07:31:42Z
 last_review_date: 2026-08-10T07:31:42Z
 ttl_days: 90

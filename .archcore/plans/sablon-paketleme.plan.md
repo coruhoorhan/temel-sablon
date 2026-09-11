@@ -1,4 +1,5 @@
 ---
+title: "sablon-paketleme — Şablonu yeni proje başlangıcı olarak paketleme"
 id: sablon-paketleme
 status: accepted
 created: 2026-08-02
@@ -6,7 +7,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T10:38:42Z
 last_review_date: 2026-08-02T10:38:42Z
 ttl_days: 90
-plan_hash: 4278a45c41db6075be9e521c9fc8309c4cd95ac393745058d43e8064b2114a4c
+plan_hash: 3fe19d3ba038eb5a36310b99165e1ddfd2b7d9e4fe9a9c1e48ab7e61b9398e66
 scope:
   allowed_paths:
     - "**"

@@ -1,4 +1,6 @@
 ---
+title: "10. Yapı"
+status: accepted
 description: Yapı kuralları — FSD klasör şeması, dosya adlandırma, bileşen düzeni
 globs: src/**
 priority: P1

@@ -1,5 +1,7 @@
 ---
-description: Hafıza doğrulama kuralları — 14 madde (TEMEL-MIMARI §8.3): provenance, iki katmanlı yazma, PR onayı, TTL, supersession, auditor, arşivleme
+title: "11. Hafıza"
+status: accepted
+description: "Hafıza doğrulama kuralları — 14 madde (TEMEL-MIMARI §8.3): provenance, iki katmanlı yazma, PR onayı, TTL, supersession, auditor, arşivleme"
 globs: .archcore/**/*.md
 priority: P0
 last_review_date: 2026-08-02
@@ -8,14 +10,14 @@ ttl_days: 90
 
 # 11. Hafıza
 
-**Kaynak:** TEMEL-MIMARI.md §8.3 (14 madde) · §2.4 (19 belge türü, draft→accepted→rejected, assistant/auditor ayrımı) · §2.5 (hafıza zehirlemesi) · §3.3 madde 5 (drift kapısı) · 5 aşamalı yaşam döngüsü (yazma→doğrulama→onay→yaşlanma→arşiv)
+**Kaynak:** temel-mimari.doc.md §8.3 (14 madde) · §2.4 (19 belge türü, draft→accepted→rejected, assistant/auditor ayrımı) · §2.5 (hafıza zehirlemesi) · §3.3 madde 5 (drift kapısı) · 5 aşamalı yaşam döngüsü (yazma→doğrulama→onay→yaşlanma→arşiv)
 **Zorlama:** makine yalnızca TTL/drift (`.archcore/bin/verify-drift`, FAZ 4) + ruleset + izin yapısı; geri kalanı verifier/insan — §8.1: araçsız kural = dilek, çoğu madde bilinçli insan kapısıdır
 
 ## ALWAYS
 
 ### R11-01 · Kaynak/provenance zorunlu
 **Ne:** `source:` olmayan girdi `draft`'ı geçemez; statü yükseltme kaynağa bağlı. **Neden:** kaynaksız hafıza doğrulanamaz — zehirleme yüzeyi (MPBench ASR %50.46).
-❌ `# Kural X` (kaynak satırı yok) ✅ frontmatter: `source: TEMEL-MIMARI.md §8.3`
+❌ `# Kural X` (kaynak satırı yok) ✅ frontmatter: `source: temel-mimari.doc.md §8.3`
 **Zorlayan:** insan (draft→accepted'ı insan taşır) + verifier V11-1
 
 ### R11-02 · Ajan parafrazı güven üretmez

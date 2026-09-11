@@ -1,8 +1,9 @@
 ---
+title: "Plan: f6-setup-v2"
 description: F6 (setup.sh v2) — full wiring + receipt + dry-run + GitHub secrets/environments
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 0890234e3ed61375fd88568fb8ab56687e200f9e712e36761bc24c585190bb48
+plan_hash: 5619a34c83a2932eefa67aa119c5d1ab81097484cf1551d562686f5e3f437446
 last_approved: 2026-08-07T06:05:32Z
 last_review_date: 2026-08-07T06:05:32Z
 ttl_days: 90

@@ -175,7 +175,7 @@ npm run arch:check
 ### F8 — Dokümantasyon
 
 ```bash
-cat .archcore/TEMEL-MIMARI.md     # mimari doküman (yeni projeye kopyalanır)
+cat .archcore/temel-mimari.doc.md     # mimari doküman (yeni projeye kopyalanır)
 ls docs/*.drawio                  # draw.io ile açılabilir 3 diyagram
 cat CHANGELOG.md                  # v2.0.0 + migration guide
 ```
@@ -242,7 +242,7 @@ kilitler. Collaborator eklersen review şartı otomatik devreye girer.
 ├── AGENTS.md / CLAUDE.md      ajan köprüleri
 ├── setup.sh                   kurulum (v2: --dry-run/--help, receipt)
 ├── .archcore/
-│   ├── TEMEL-MIMARI.md        mimari doküman
+│   ├── temel-mimari.doc.md        mimari doküman
 │   ├── plans/                 onay state'i (<id>.plan.md)
 │   ├── rules/                 11 kural dosyası
 │   ├── bin/                   kapı scriptleri (verify-commit-msg/push/pr, drift)

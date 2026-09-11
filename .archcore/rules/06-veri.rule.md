@@ -1,4 +1,6 @@
 ---
+title: "6. Veri"
+status: accepted
 description: Veri kuralları — doğrulama, dönüşüm, null handling, timezone, pagination
 globs: src/**/*.{ts,tsx}
 priority: P0

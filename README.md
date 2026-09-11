@@ -4,7 +4,7 @@ Her projede kopyala-başlat: kural kataloğu (11 kategori), plan onay kapısı
 (ajan-bağımsız, git-merkezli), commit öncesi doğrulama altyapısı, hafıza, governance
 ve MCP güvenliği.
 
-> Mimari doküman: [`.archcore/TEMEL-MIMARI.md`](.archcore/TEMEL-MIMARI.md) — şablonun
+> Mimari doküman: [`.archcore/temel-mimari.doc.md`](.archcore/temel-mimari.doc.md) — şablonun
 > içinde yaşar, `setup.sh` her yeni projeye kopyalar.
 
 ## Özellikler (v2.0.0)
@@ -38,7 +38,7 @@ temel/
 │   └── security-*.yml         SAST (Semgrep) / SCA (OSV) / container (Trivy)
 ├── .gitignore
 └── .archcore/
-    ├── TEMEL-MIMARI.md        mimari doküman (F8)
+    ├── temel-mimari.doc.md        mimari doküman (F8)
     ├── plans/                 onay state'i — <id>.plan.md (status/hash/scope)
     ├── templates/
     │   └── plan.plan.md.tmpl  plan şablonu
@@ -80,7 +80,7 @@ Elle kurulum (script'siz — sadece gerektiğinde):
    `git init && git branch -M main`
 3. Bağımlılıkları kur: `npm install && npm run hooks:install`
 4. **Sistem araçları (npm DEĞİL):** `gitleaks` — `apt install gitleaks` / `brew install gitleaks` / `go install github.com/gitleaks/gitleaks/v8@latest` (npm'de "gitleaks" adlı paket SAHTEDİR, kurma)
-5. Plan onay akışını oku: `.archcore/plans/README.md` (yaşam döngüsü, bkz. aşağısı)
+5. Plan onay akışını oku: `.archcore/plans/plans-guide.guide.md` (yaşam döngüsü, bkz. aşağısı)
 6. FAZ 1-6'ya göre makine yığınını kur (doküman Bölüm 5)
 
 ## Çalışma döngüsü (ajan + insan)

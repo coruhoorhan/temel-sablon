@@ -1,4 +1,5 @@
 ---
+title: "branch-duzeltme — Default branch'i main yap (CI tetikleme düzeltmesi)"
 id: branch-duzeltme
 status: accepted
 created: 2026-08-02
@@ -6,7 +7,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:28:48Z
 last_review_date: 2026-08-02T11:28:48Z
 ttl_days: 90
-plan_hash: 72cceb52f7d2e2e13c68ee98609881bf99ce48e0c2248c2cced459f5054f1001
+plan_hash: b958f79031b7eec78c4d07c1d029f1e8ab1d3a9ac219bfa4004522032f508331
 scope:
   allowed_paths:
     - README.md

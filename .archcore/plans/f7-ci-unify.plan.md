@@ -1,8 +1,9 @@
 ---
+title: "Plan: f7-ci-unify"
 description: F7 (CI/CD Unification) — verify.yml birleşik pipeline + matrix + artifact + branch protection
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 20082baf95d3951fcdd8638b02afee01df8f7c158517aa49914db5eb3ddc8801
+plan_hash: d8892cf8bd2f93c0d1def11b1152a86486166130f3244cb8361ca36817d90915
 last_approved: 2026-08-07T06:05:32Z
 last_review_date: 2026-08-07T06:05:32Z
 ttl_days: 90

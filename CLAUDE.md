@@ -18,7 +18,7 @@
 
 - Stack: TypeScript 5.9 strict · Vite · Vitest 4 · ESLint 10 (flat) · FSD (feature-sliced)
 - Ortam: Linux (Arch/Ubuntu/Debian), Node 24 LTS
-- Mimari: `.archcore/TEMEL-MIMARI.md` — katmanlar, kapılar, veri akışı
+- Mimari: `.archcore/temel-mimari.doc.md` — katmanlar, kapılar, veri akışı
 
 ## Zorunlu Akış (ajan kuralı — ihlal = kod yazma yasağı)
 

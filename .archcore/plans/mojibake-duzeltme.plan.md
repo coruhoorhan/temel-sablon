@@ -1,4 +1,5 @@
 ---
+title: "mojibake-duzeltme — 10 kural dosyasında Türkçe karakter onarımı"
 id: mojibake-duzeltme
 status: accepted
 created: 2026-08-02
@@ -6,7 +7,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:28:48Z
 last_review_date: 2026-08-02T11:28:48Z
 ttl_days: 90
-plan_hash: 7229d6544a10060b58a7ecfa564bdf9537e440781cc2bee7b95d967ffa9535f7
+plan_hash: 33b7b321e6e4e154c91f7f48b850f6595eb33f974d7e923d2f6f5bb880bd4cb3
 scope:
   allowed_paths:
     - .archcore/rules/01-tipler.rule.md

@@ -1,4 +1,6 @@
 ---
+title: "5. Hata Yönetimi"
+status: accepted
 description: Hata yönetimi kuralları — hata yutma yasağı, hata zinciri bütünlüğü, kullanıcı mesajı
 globs: src/**/*.{ts,tsx}
 priority: P0

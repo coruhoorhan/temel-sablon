@@ -1,8 +1,9 @@
 ---
+title: "Plan: f1-f5-plan-fix"
 description: F1-F5 plan dosyalarına allowed_paths ekleme — plan-gate scope kontrolü için geriye dönük düzeltme
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: c46d8743705f87422900587238d83e23f6f89416de2a4fa474fed63c1664f2c1
+plan_hash: 064b83fe4758e81b0cb5b4044e6de16bf8f17c0106e2cc6452744e2ac5d92eb4
 last_approved: 2026-08-10T05:47:04Z
 last_review_date: 2026-08-10T05:47:04Z
 ttl_days: 90

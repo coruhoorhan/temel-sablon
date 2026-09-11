@@ -1,3 +1,8 @@
+---
+title: "Onay State Dizini"
+status: accepted
+---
+
 # Onay State Dizini
 
 Bu dizin, **plan onayının tek kaynağıdır** (Katman 1 — ajan-bağımsız).

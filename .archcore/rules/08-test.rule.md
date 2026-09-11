@@ -1,4 +1,6 @@
 ---
+title: "8. Test"
+status: accepted
 description: Test kuralları — coverage eşiği, testing-library disiplini, AAA deseni
 globs: src/**/*.test.{ts,tsx}, src/**/__tests__/**
 priority: P0

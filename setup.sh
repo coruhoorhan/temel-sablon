@@ -730,6 +730,14 @@ info "verify-drift (TTL/bayatlık taraması)"
 if bash .archcore/bin/verify-drift >/dev/null 2>&1; then ok "drift: 0 bayat 0 uyarı"; else
   fail "verify-drift başarısız"; fail_count=$((fail_count + 1)); fi
 
+info "archcore status (CLI senkron kapısı)"
+if have archcore; then
+  if archcore status >/dev/null 2>&1; then ok "archcore: senkron (0 issue)";
+  else fail "archcore status kırmızı — ayrıntı: archcore status"; fail_count=$((fail_count + 1)); fi
+else
+  warn "archcore CLI yok — senkron kapısı atlandı (go install github.com/archcore-ai/cli@latest)"
+fi
+
 if have midas; then
   info "Midas wiring doğrulaması"
   mkdir -p .archcore/tmp

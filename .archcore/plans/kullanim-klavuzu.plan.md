@@ -1,8 +1,9 @@
 ---
+title: "Plan: kullanim-klavuzu"
 description: Kullanım kılavuzu ekleme — TEMEL şablonunu test eden kullanıcı için adım adım rehber
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 04d0c2d63410719abf279fed3820d45f33653967eeca1af619638ed63ab0be2d
+plan_hash: 0e541aea7957a04f8a20a3d5b2d1cc057f2dfdba384e7c8fecae53715bc2d517
 last_approved: 2026-08-10T06:06:02Z
 last_review_date: 2026-08-10T06:06:02Z
 ttl_days: 90

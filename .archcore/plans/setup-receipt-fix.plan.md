@@ -1,8 +1,9 @@
 ---
+title: "Plan: setup-receipt-fix"
 description: setup.sh midas receipt sıralama hatası — tmp temizliği doğrulamadan önce receipt'i siliyor
 status: accepted
 approved_by: Kullanici
-plan_hash: 3ebecaf451404551ee2a3d18f2be14275388a437b14102d12d3fdef4727b337e
+plan_hash: c33bf29e1a6a46f8a0357f1727f912fa14687ceb45f3edf196bfeda5ab165aac
 last_approved: 2026-09-11T07:08:52Z
 last_review_date: 2026-09-11T07:08:52Z
 ttl_days: 90

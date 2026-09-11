@@ -1,8 +1,9 @@
 ---
+title: "Plan: f8-docs-polish"
 description: F8 (Dokümantasyon & Polish) — mimari doküman, import'lar, README/CHANGELOG v2.0.0, drawio diyagramlar
 status: accepted
 approved_by: coruhoorhan (insan)
-plan_hash: 2c0032628193f79c16e110a80afac15b667dd902c7ed2468867b02b7b5d861d3
+plan_hash: 83ac9afdce9d577c35757c385db8f559593c056971204be659d38078d1e5aed8
 last_approved: 2026-08-07T08:33:28Z
 last_review_date: 2026-08-07T08:33:28Z
 ttl_days: 90

@@ -1,8 +1,9 @@
 ---
+title: "Plan: audit-remediation"
 description: Audit remediation — fail-closed security, plan-gate parity, setup correctness
 status: accepted
 approved_by: Kullanici
-plan_hash: 123989c6defa99b76240175256482610579c80b823876edd635c55a486601ebf
+plan_hash: 005c0cdda0c85dcc9b7862bbdc7d7d7f9241f1d7165b137af4606c66b01067dd
 last_approved: 2026-08-13T13:25:12Z
 last_review_date: 2026-08-13T13:25:12Z
 ttl_days: 90

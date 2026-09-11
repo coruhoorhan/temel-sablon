@@ -1,4 +1,5 @@
 ---
+title: "denetim-duzeltme — 3 alt ajan denetiminde bulunan 7 sorunun onarımı"
 id: denetim-duzeltme
 status: accepted
 created: 2026-08-02
@@ -6,7 +7,7 @@ approved_by: Kullanici
 last_approved: 2026-08-02T11:33:46Z
 last_review_date: 2026-08-02T11:33:46Z
 ttl_days: 90
-plan_hash: 398d542d9a11d98d09acebae331ed2edc52a1e7d4c8c4bf53349c6159c62ce08
+plan_hash: fab06f639226563afecac130a3d3d3608bb22edf2628fece10dd12863b48301c
 scope:
   allowed_paths:
     - .archcore/bin/**
