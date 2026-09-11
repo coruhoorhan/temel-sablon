@@ -59,7 +59,8 @@ pre-push:
       # Steiger FSD ve Knip ölü kod denetimi push öncesi zorunludur
       run: npm run arch:check
     - name: tests
-      run: npm test
+      # Vitest testleri ve %80 coverage eşik denetimi zorunludur
+      run: npm run coverage
     # ---- AGT (F2 · T2.5): policy + prompt defense push öncesi ----
     # Fail-open (bilgi amaçlı): agt yoksa push engellenmez — CI (K3) zorlar.
     # Policy template'ten üretilen gerçek dosyayı lint'ler; şema bozuksa uyarır.
