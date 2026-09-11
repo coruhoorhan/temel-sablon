@@ -54,7 +54,7 @@ if [[ -z "$stored_hash" || "$body_hash" != "$stored_hash" ]]; then
   rollback_commit "Plan '$plan_id' hash uyuşmazlığı (onay sonrası plan değiştirilmiş)."
 fi
 
-# 4. Scope kontrolü (allowed_paths)
+# 4. Scope ve Güvenlik kontrolü (allowed_paths + secret engeli)
 scope_allowed="$(awk '/^[[:space:]]*allowed_paths:/{active=1; next} active && /^---/{exit} active && /^[[:space:]]+-[[:space:]]*[^[:space:]]/{sub(/^[[:space:]]*-[[:space:]]*/, ""); print}' "$plan_file")"
 if [[ -z "$scope_allowed" ]]; then
   rollback_commit "Plan '$plan_id' içinde allowed_paths tanımlı değil."
@@ -63,6 +63,11 @@ fi
 shopt -s globstar nullglob extglob
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
+  # Secret dosyaların commit edilmesini kesin engelle
+  if echo "$f" | grep -qE "(^|/)(\.env(\..+)?|.*\.pem|.*\.key|.*\.secret)$"; then
+    rollback_commit "Secret/env dosyası ($f) commit edilemez!"
+  fi
+
   matched=0
   while IFS= read -r pat; do
     [[ -z "$pat" ]] && continue
@@ -76,6 +81,14 @@ while IFS= read -r f; do
     rollback_commit "'$f' dosyası plan scope'u dışında (allowed_paths ihlali)."
   fi
 done < <(git diff-tree --no-commit-id --name-only -r HEAD)
+
+# 5. Doğrudan main/master dalına commit engeli
+current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
+  if [[ "${ALLOW_MAIN_COMMIT:-0}" != "1" ]]; then
+    rollback_commit "'$current_branch' dalına doğrudan commit atılamaz. Çalışma dalı açılmalıdır (git checkout -b feat/<ad>)."
+  fi
+fi
 
 echo "[ANTI-BYPASS] OK: HEAD commit ($plan_id) tüm mekanik kontrollerden geçti."
 exit 0

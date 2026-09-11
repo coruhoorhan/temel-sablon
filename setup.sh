@@ -9,6 +9,7 @@
 #   bash setup.sh --help      (bu yardım)
 
 set -uo pipefail
+export ALLOW_MAIN_COMMIT=1
 
 # --- CLI argümanları (F6 · T6.1) ---
 DRY_RUN=0
@@ -793,6 +794,12 @@ if have archcore; then
   else fail "archcore status kırmızı — ayrıntı: archcore status"; fail_count=$((fail_count + 1)); fi
 else
   warn "archcore CLI yok — senkron kapısı atlandı (go install github.com/archcore-ai/cli@latest)"
+fi
+
+if have specbind; then
+  info "specbind check contracts (sözleşme grafiği kapısı)"
+  if specbind check contracts >/dev/null 2>&1; then ok "specbind: sözleşmeler tutarlı"; else
+    fail "specbind check contracts kırmızı"; fail_count=$((fail_count + 1)); fi
 fi
 
 if have midas; then

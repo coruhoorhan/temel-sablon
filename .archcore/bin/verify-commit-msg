@@ -64,6 +64,12 @@ fi
 shopt -s globstar nullglob extglob
 staged_files="$(git diff --cached --name-only 2>/dev/null || true)"
 if [[ -n "$staged_files" ]]; then
+  # Secret / env dosyalarının commit edilmesini kesin engelle
+  if echo "$staged_files" | grep -qE "(^|/)(\.env(\..+)?|.*\.pem|.*\.key|.*\.secret)$"; then
+    echo "[plan-gate] GÜVENLİK HATASI: Secret/env dosyası (.env, .pem, .key) commit edilemez!" >&2
+    exit 1
+  fi
+
   while IFS= read -r f; do
     [[ -z "$f" ]] && continue
     matched=0
@@ -82,6 +88,17 @@ if [[ -n "$staged_files" ]]; then
       exit 1
     fi
   done <<< "$staged_files"
+fi
+
+# --- Doğrudan main/master dalına commit engeli (feat/* veya fix/* zorunlu) ---
+current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [[ "$current_branch" == "main" || "$current_branch" == "master" ]]; then
+  if [[ "${ALLOW_MAIN_COMMIT:-0}" != "1" ]]; then
+    echo "[plan-gate] HATA: '$current_branch' dalına doğrudan commit atılamaz!" >&2
+    echo "[plan-gate] Lütfen bir çalışma dalı açın: git checkout -b feat/<ad> veya fix/<ad>" >&2
+    echo "[plan-gate] (Zorunlu ilk kurulum/release durumlarında: ALLOW_MAIN_COMMIT=1)" >&2
+    exit 1
+  fi
 fi
 
 echo "[plan-gate] OK: '$plan_id' — onaylayan: $approved_by"

@@ -3,6 +3,7 @@
 # dizine kurulum + kapıların pozitif/negatif senaryoları. CI'da koşar.
 # Kullanım: smoke-e2e.sh  (repo kökünden)
 set -euo pipefail
+export ALLOW_MAIN_COMMIT=1
 
 ROOT="$(git rev-parse --show-toplevel)"
 TMP="$(mktemp -d)"

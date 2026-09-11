@@ -131,6 +131,33 @@ export function createArchitecturePlugin() {
           return { diagnostics }
         },
       },
+      {
+        name: 'fsd-layers-only',
+        check(root) {
+          /** @type {SteigerDiagnostic[]} */
+          const diagnostics = []
+          const allowedLayers = new Set(LAYER_ORDER)
+
+          if (root.type === 'folder') {
+            for (const child of root.children) {
+              if (child.type === 'folder') {
+                const folderName = child.path.split('/').filter(Boolean).pop()
+                if (folderName && !allowedLayers.has(folderName)) {
+                  diagnostics.push({
+                    message:
+                      `FSD ihlali (temel/fsd-layers-only): 'src/${folderName}' geçerli bir FSD katmanı değildir. ` +
+                      `Yalnızca standart FSD katmanları izinlidir: ${LAYER_ORDER.join(', ')}. ` +
+                      `Bileşenler ve mantık 'src/components/' gibi düz klasörlere değil; 'shared/', 'entities/', 'features/', 'widgets/' veya 'pages/' altında dilimlenmelidir.`,
+                    location: { path: child.path },
+                  })
+                }
+              }
+            }
+          }
+
+          return { diagnostics }
+        },
+      },
     ],
   }
 }
