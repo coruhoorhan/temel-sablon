@@ -1,7 +1,7 @@
 ---
 title: "8. Test"
 status: accepted
-description: Test kuralları — coverage eşiği, testing-library disiplini, AAA deseni
+description: Test kuralları — TDD red-green, coverage eşiği, testing-library disiplini, AAA deseni, e2e
 globs: src/**/*.test.{ts,tsx}, src/**/__tests__/**
 priority: P0
 last_review_date: 2026-08-02
@@ -38,10 +38,17 @@ ttl_days: 90
 **Ne:** her test üç bölüm + tek davranış iddiası. **Neden:** başarısız testin "ne bozuldu" sorusu 5 sn'de yanıtlanır.
 **Zorlayan:** verifier (V8-1) — yapısal makine kuralı yok
 
+### R8-06 · TDD red-green (test önce)
+**Ne:** yeni davranış önce kırmızı testle kanıtlanır, sonra kod yazılır. **Neden:** test-after, testi koda uydurur; red-green, davranışı kilitler.
+**Zorlayan:** `verify-tdd-impact.sh` (kaba: src dokunuşu testsiz commit'e girmez) + verifier (V8-4)
+
+### R8-07 · Kritik akışta e2e
+**Ne:** kullanıcı akışları (UI varsa Playwright) e2e ile kilitlenir; şablonun kendi e2e'si `smoke-e2e.sh` (kurulum + kapı senaryoları, CI'da koşar). **Neden:** birim test yeşilken akış kırılabilir.
+**Zorlayan:** CI smoke-e2e + verifier (V8-5)
+
 ## ASK FIRST
 - R8-A1: sözleşme-doğrulayan test — kritik iş mantığında şema (Zod) + happy/unhappy yol testleri şart mı?
 - R8-A2: snapshot testleri yalnızca kararlı UI'da; değişen UI'da snapshot = gürültü
-- R8-A3: E2E (Playwright) — kritik akışlar FAZ 6 pilotunda kararlaştırılacak
 
 ## NEVER
 - ❌ `getByTestId` (testing-library kuralı — kullanıcı görünürlüğü yerine test kancası)
@@ -53,3 +60,5 @@ ttl_days: 90
 - V8-1: AAA deseni — testler düzenli mi, tek davranış mı iddia ediyor?
 - V8-2: sözleşme testi — yeni iş mantığı için happy+unhappy yol var mı?
 - V8-3: test kapsamı — diff'teki kritik dallar (hata yolları) test edilmiş mi? (C7 checklist)
+- V8-4: TDD sırası — test koddan önce mi yazılmış (dosya saatleri/commit sırası)?
+- V8-5: e2e kilidi — kritik kullanıcı akışı e2e'siz mi kalmış?

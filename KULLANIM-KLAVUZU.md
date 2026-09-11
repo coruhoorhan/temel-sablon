@@ -52,6 +52,9 @@ Script soracaklarını sorar (proje adı, GitHub repo oluşturma — y/N). Kurul
 5. KAPILAR → pre-commit → commit-msg → pre-push → CI otomatik çalışır
 ```
 
+> TDD zorunlu (R8-06): davranış önce kırmızı testle kanıtlanır; `src`
+> dokunuşu testsiz commit'e girmez (`verify-tdd-impact.sh`).
+
 ### Plan onayı (insan)
 
 ```bash

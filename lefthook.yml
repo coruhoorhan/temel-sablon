@@ -19,11 +19,14 @@ pre-commit:
       stage_fixed: true
     - name: secrets
       # gitleaks SİSTEM aracıdır (devDependency DEĞİL): npm'de resmi paketi yok,
-      # "gitleaks" adlı npm paketi sahte/şüpheli (#16). Kur: apt/brew install gitleaks
+      # "gitleaks" adlı npm paketi SAHTEDİR, kurma (#16). Kur: apt/brew install gitleaks
       # veya: go install github.com/gitleaks/gitleaks/v8@latest
       # v8.30+: `detect --staged` KALDIRILDI → `git --staged` (staged diff tarar;
       # `git --pre-commit` ilk commit öncesi 0 commit tarar, pre-commit hook'u için değil)
       run: gitleaks git --staged -v .
+    - name: tdd-impact
+      # R8 kaba kapısı: src üretim dosyasına dokunan commit test de getirmeli.
+      run: git diff --cached --name-only | bash .archcore/bin/verify-tdd-impact.sh --stdin
     - name: quick-lint
       run: npx eslint {staged_files}
     - name: llm-verify

@@ -460,6 +460,12 @@ wire_specbind() {
       return 1
     fi
   fi
+  if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+      printf '%s\n' 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+    fi
+    warn "yeni kabuk için: export PATH=\"\$HOME/.local/bin:\$PATH\" (.bashrc'ye eklendi)"
+  fi
   return 0
 }
 
